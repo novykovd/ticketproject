@@ -1,5 +1,6 @@
 import { createCanvas } from 'canvas';
 import fs from 'fs';
+import { RTree } from './rtree.js';
 
 // Real pixel canvas size
 const canvasWidth = 800;
@@ -53,11 +54,11 @@ function computeBounds(rects) {
 }
 
 function leafToRect(leaf) {
-  const minx = Math.min(leaf.minX, leaf.maxX);
-  const maxx = Math.max(leaf.minX, leaf.maxX);
-  const miny = Math.min(leaf.minY, leaf.maxY);
-  const maxy = Math.max(leaf.minY, leaf.maxY);
-  return { minx, miny, maxx, maxy };
+  const minX = Math.min(leaf.minX, leaf.maxX);
+  const maxX = Math.max(leaf.minX, leaf.maxX);
+  const minY = Math.min(leaf.minY, leaf.maxY);
+  const maxY = Math.max(leaf.minY, leaf.maxY);
+  return { minX, minY, maxX, maxY };
 }
 
 const rects = leaves.map(leaf => leafToRect(leaf));
@@ -81,10 +82,10 @@ console.log("drawing polylines")
  
 leaves.forEach((rect, idx) => {
 
-  const x = (rect.minX - xoff) * scale;
-  const y = canvasHeight - (rect.minY - yoff) * scale; // flip Y
-  const w = (rect.maxX - rect.minX) * scale;
-  const h = (rect.maxY - rect.minY) * scale * -1;
+  const x = (rect.minX - xoff) * scaleX;
+  const y = canvasHeight - (rect.minY - yoff) * scaleY; // flip Y
+  const w = (rect.maxX - rect.minX) * scaleX;
+  const h = (rect.maxY - rect.minY) * scaleY * -1;
 
   // Draw polylines
   ctx.strokeStyle = 'red';
@@ -97,19 +98,35 @@ leaves.forEach((rect, idx) => {
   console.log("polyline points: ", x, " ", y, " ", x + w, " ", h + y)
 });
 
-rects.forEach((rect) => {
-  // Draw rectangle
-
-  const x = (rect.minx - xoff) * scale;
-  const y = canvasHeight - (rect.miny - yoff) * scale; // flip Y
-  const w = (rect.maxx - rect.minx) * scale;
-  const h = (rect.maxy - rect.miny) * scale;
+function drawRectangle(rect, color) {
+  const x = (rect.minX - xoff) * scaleX;
+  const y = canvasHeight - (rect.minY - yoff) * scaleY; // flip Y
+  const w = (rect.maxX - rect.minX) * scaleX;
+  const h = (rect.maxY - rect.minY) * scaleY;
 
 
-  ctx.strokeStyle = 'blue';
+  ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.strokeRect(x, y - h, w, h); // adjust y because canvas Y=top
+}
+
+const tree = new RTree()
+
+for (const r of rects) {
+  tree.insert(r, r)
+}
+
+const branches = tree.getAllRectangles()
+
+for (const r of branches) {
+  drawRectangle(r, 'green')
+}
+
+rects.forEach((rect) => {
+  drawRectangle(rect, 'blue')
 })
+
+
 
 const buffer = canvas.toBuffer('image/png');
 fs.writeFileSync('./rtree.png', buffer);
