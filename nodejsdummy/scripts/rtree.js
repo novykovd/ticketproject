@@ -176,6 +176,50 @@ export class RTree {
 
         return rects
     }
+
+    knn(q, k) {
+        const best = []
+
+        const search = (node) => {
+
+            for (const entry of node.entries) {
+
+                const rectDist = rectRectDistance(q, entry.mbr)
+
+                if (best.length === k && rectDist > best[best.length-1].dist) {
+                    continue
+                }
+
+                if (node.leaf) {
+
+                    const d = rectCenterDistance(q, entry.mbr)
+
+                    best.push({
+                        obj: entry.child,
+                        dist: d
+                    })
+
+                    best.sort((a,b)=>a.dist-b.dist)
+
+                    if (best.length > k) {
+                        best.pop()
+                    }
+
+                } else {
+
+                    search(entry.child)
+
+                }
+
+            }
+
+        }
+
+        search(this.root)
+
+        return best
+    }
+
 }
 
 class Node {
@@ -201,4 +245,32 @@ function union(a, b) {
 
 function enlargement(a, b) {
   return area(union(a, b)) - area(a)
+}
+
+function rectRectDistance(a, b) {
+
+  const dx =
+    a.maxX < b.minX ? b.minX - a.maxX :
+    b.maxX < a.minX ? a.minX - b.maxX :
+    0
+
+  const dy =
+    a.maxY < b.minY ? b.minY - a.maxY :
+    b.maxY < a.minY ? a.minY - b.maxY :
+    0
+
+  return Math.sqrt(dx*dx + dy*dy)
+}
+
+function rectCenterDistance(a, b) {
+    const ax = (a.minX + a.maxX) / 2;
+    const ay = (a.minY + a.maxY) / 2;
+
+    const bx = (b.minX + b.maxX) / 2;
+    const by = (b.minY + b.maxY) / 2;
+
+    const dx = ax - bx;
+    const dy = ay - by;
+
+    return Math.sqrt(dx * dx + dy * dy);
 }

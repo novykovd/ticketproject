@@ -126,7 +126,8 @@ rects.forEach((rect) => {
   drawRectangle(rect, 'blue')
 })
 
-
+var nearest = tree.knn({ minX: 48.1505737304688, minY: 17.1728515625, maxX: 48.1507263183594, maxY: 17.1760425567627 }, 3)
+console.log(nearest)
 
 const buffer = canvas.toBuffer('image/png');
 fs.writeFileSync('./rtree.png', buffer);
