@@ -37,7 +37,7 @@ const leaves = [
   { minX: 48.1377792358398, minY: 17.2140045166016, maxX: 48.1439399719238, maxY: 17.2128887176514 }
 ];
 
-function computeBounds(rects) {
+export function computeBounds(rects) {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -53,7 +53,7 @@ function computeBounds(rects) {
   return { minX, minY, maxX, maxY };
 }
 
-function leafToRect(leaf) {
+export function leafToRect(leaf) {
   const minX = Math.min(leaf.minX, leaf.maxX);
   const maxX = Math.max(leaf.minX, leaf.maxX);
   const minY = Math.min(leaf.minY, leaf.maxY);
