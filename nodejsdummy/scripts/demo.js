@@ -1,10 +1,7 @@
-import {leafToRect, computeBounds} from "./util.js"
-import { RTree } from './rtree.js';
+import { runRTreeVisualization } from "./runDemo.js";
+import { loadGTFSSegments } from "./gtfsUpdater.js";
 import { createCanvas } from 'canvas';
 import fs from 'fs';
-import { Viewport } from './viewport.js';
-import { createRenderer } from './renderer.js';
-
 
 const leaves = [
   { minX: 48.157543182373, minY: 17.1067714691162, maxX: 48.1557006835938, maxY: 17.1075477600098 },
@@ -34,45 +31,27 @@ const leaves = [
   { minX: 48.1377792358398, minY: 17.2140045166016, maxX: 48.1439399719238, maxY: 17.2128887176514 }
 ];
 
-export function runRTreeVisualization(canvas, data, leaves) {
-  const ctx = canvas.getContext('2d');
-  const tree = new RTree();
-  
-  // 1. Setup Logic
-  data.forEach(r => tree.insert(r, r));
-  
-  // 2. Setup Viewport (using your computeBounds logic)
-  const bounds = computeBounds(data); 
-  const view = new Viewport(bounds, canvas.width, canvas.height);
-  const paint = createRenderer(ctx, view);
+const CONFIG = {
+    useFullDataset: process.argv.includes('--full'), 
+    limit: 5000 // To prevent crashing your canvas while testing
+};
 
-  // 3. Execute "Scene"
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  // Draw MBRs (Branches)
-  tree.getAllRectangles().forEach(r => paint.drawBox(r, 'green'));
-  
-  // Draw Leaves
-  data.forEach(r => paint.drawBox(r, 'blue', 1));
-  leaves.forEach(leaf => paint.drawLine(leaf, "yellow"))
-  
-  // Draw Highlight (KNN)
-  const nearest = tree.knn({ minX: 48.1505737304688, minY: 17.1728515625, maxX: 48.1507263183594, maxY: 17.1760425567627 }, 3);
-  nearest.forEach(n => paint.drawBox(n.obj, 'red', 4));
-  console.log(nearest)
+const canvasWidth = 1500;
+const canvasHeight = 1500;
+const gtfsPath = 'C:/Users/david/Documents/GTFS_latest/shapes.txt'
+let canvas = createCanvas(canvasWidth, canvasHeight);
+let data;
+
+if (CONFIG.useFullDataset) {
+    console.log("Loading full GTFS dataset...");
+    data = loadGTFSSegments(gtfsPath).slice(0, CONFIG.limit);
+} else {
+    console.log("Loading small demo set...");
+    data = leaves;
 }
 
-const canvasWidth = 800;
-const canvasHeight = 800;
-let canvas = createCanvas(canvasWidth, canvasHeight);
-
-const rects = leaves.map(leaf => leafToRect(leaf));
-
-runRTreeVisualization(canvas, rects, leaves);
+runRTreeVisualization(canvas, data);
 
 const buffer = canvas.toBuffer('image/png');
 fs.writeFileSync('./rtree.png', buffer);
 console.log('Saved rtree.png');
-
-
-
