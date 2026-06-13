@@ -1,6 +1,8 @@
 import { runRTreeVisualization } from "./runDemo.js";
 import { loadGTFSSegments } from "./gtfsUpdater.js";
 import { createCanvas } from 'canvas';
+import { RTree } from "./rtree.js";
+import { populateRTree } from "./util.js";
 import fs from 'fs';
 
 const leaves = [
@@ -50,7 +52,10 @@ if (CONFIG.useFullDataset) {
     data = leaves;
 }
 
-runRTreeVisualization(canvas, data);
+const tree = new RTree(); 
+populateRTree(tree, data);
+
+runRTreeVisualization(canvas, tree);
 
 const buffer = canvas.toBuffer('image/png');
 fs.writeFileSync('./rtree.png', buffer);

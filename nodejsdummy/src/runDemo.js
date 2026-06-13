@@ -1,16 +1,26 @@
-import {leafToRect, computeBounds} from "./util.js"
+import {computeBounds} from "./util.js"
 import { RTree } from './rtree.js';
 import { Viewport } from './viewport.js';
 import { createRenderer } from './renderer.js';
 
-export function runRTreeVisualization(canvas, leaves) {
-  const ctx = canvas.getContext('2d');
-  const tree = new RTree();
+/**
+ * Puns visuals over passed rtree
+ * * @param {RTree} tree
+ * @param {Canvas} canvas
+ */
 
-  const data = leaves.map(leaf => leafToRect(leaf));
+export function runRTreeVisualization(canvas, tree) {
+  const ctx = canvas.getContext('2d');
+
+  var leafSearch = tree.getLeafEntries()
+
+  var data = new Array();
+  var leaves = new Array();
   
-  // 1. Setup Logic
-  data.forEach(r => tree.insert(r, r));
+  leafSearch.forEach(entry =>{
+    data.push(entry.mbr)
+    leaves.push(entry.payload.segment)
+  }) 
   
   // 2. Setup Viewport (using your computeBounds logic)
   const bounds = computeBounds(data); 

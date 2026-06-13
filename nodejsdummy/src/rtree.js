@@ -177,6 +177,28 @@ export class RTree {
         return rects
     }
 
+
+    getLeafEntries() {
+        const leafEntries = [];
+
+        const traverse = (node) => {
+            if (node.leaf) {
+                node.entries.forEach(entry => {
+                    leafEntries.push({
+                        mbr: entry.mbr,
+                        payload: entry.child
+                    });
+                });
+            } else {
+                // Keep digging deeper
+                node.entries.forEach(entry => traverse(entry.child));
+            }
+        };
+
+        traverse(this.root);
+        return leafEntries;
+    }
+
     knn(q, k) {
         const best = []
 
