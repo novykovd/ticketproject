@@ -1,12 +1,19 @@
 import Fastify from "fastify";
 import cors from '@fastify/cors';
+import { clerkPlugin } from '@clerk/fastify';
+import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
+import { appRouter } from './src/router.js';
+import { createContext } from './src/trpc.js';
 
 const app = Fastify({
   logger: true
 });
 
-await app.register(cors, {
-  origin: true
+await app.register(cors, { origin: true });
+await app.register(clerkPlugin);
+await app.register(fastifyTRPCPlugin, {
+  prefix: '/trpc',
+  trpcOptions: { router: appRouter, createContext },
 });
 
 const reports = [];

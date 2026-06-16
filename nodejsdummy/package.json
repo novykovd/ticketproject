@@ -1,20 +1,28 @@
 {
-  "name": "nodejsdummy",
+  "name": "@ticketproject/api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "exports": {
+    ".": "./src/router.ts"
+  },
   "scripts": {
+    "dev": "tsx --watch server.js",
+    "start": "node server.js",
     "test": "jest"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
   "dependencies": {
+    "@clerk/fastify": "^2.2.0",
     "@fastify/cors": "^11.2.0",
-    "fastify": "^5.7.2"
+    "@ticketproject/core": "workspace:*",
+    "@ticketproject/db": "workspace:*",
+    "@trpc/server": "^11.4.3",
+    "fastify": "^5.7.2",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
+    "@ticketproject/tsconfig": "workspace:*",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.9.3",
     "jest": "^30.4.2",

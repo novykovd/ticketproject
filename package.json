@@ -1,5 +1,21 @@
 {
-  "dependencies": {
-    "canvas": "^3.2.1"
-  }
+  "name": "ticketproject",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "db:push": "turbo db:push --filter=@ticketproject/db",
+    "db:migrate": "turbo db:migrate --filter=@ticketproject/db",
+    "db:studio": "turbo db:studio --filter=@ticketproject/db"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.15.0"
 }

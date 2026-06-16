@@ -22,7 +22,7 @@ describe('Vector Matching Monte Carlo', () => {
         let correct = 0;
 
         for (let i = 0; i < TRIALS; i++) {
-            const trueSeg = dummySegments[Math.floor(Math.random() * dummySegments.length)];
+            const trueSeg = dummySegments[Math.floor(Math.random() * dummySegments.length)]!;
             const baseVec = { x: trueSeg.maxX - trueSeg.minX, y: trueSeg.maxY - trueSeg.minY };
             
             const noisyVec = applyGpsNoise(baseVec, 15);
