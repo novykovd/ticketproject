@@ -9,7 +9,7 @@ export function findBestSegment(userVector: Vector, tree: RTree) {
     let highestScore = -Infinity;
 
     candidates.forEach((entry: any) => {
-        const segVector = entry.payload.vector;
+        const segVector = entry.obj.vector;
         
         // Dot Product = (u.x * v.x) + (u.y * v.y)
         // Normalized dot product gives the cosine of the angle between them
@@ -17,7 +17,7 @@ export function findBestSegment(userVector: Vector, tree: RTree) {
         
         if (score > highestScore) {
             highestScore = score;
-            bestSegment = entry.payload.segment;
+            bestSegment = entry.obj.segment;
         }
     });
 
