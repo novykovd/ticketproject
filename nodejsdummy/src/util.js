@@ -37,7 +37,8 @@ export function populateRTree(rtreeInstance, segments) {
         // 2. Prepare the payload
         // We store the original segment and pre-calculate the vector
         const payload = {
-            segment: segment 
+            segment,
+            vector: { x: segment.maxX - segment.minX, y: segment.maxY - segment.minY },
         };
 
         // 3. Insert into the R-Tree

@@ -46,7 +46,7 @@ let data;
 
 if (CONFIG.useFullDataset) {
     console.log("Loading full GTFS dataset...");
-    data = loadGTFSSegments(gtfsPath).slice(0, CONFIG.limit);
+    data = loadGTFSSegments(gtfsPath);
 } else {
     console.log("Loading small demo set...");
     data = leaves;
