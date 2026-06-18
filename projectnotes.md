@@ -8,7 +8,7 @@ Based on everything in this conversation, here's the full picture:
 
 ---
 
-**`nodejsdummy/` (`@ticketproject/api`)**
+**`server/` (`@ticketproject/server`)**
 
 Dependencies:
 - `fastify`, `@fastify/cors` — HTTP server
@@ -83,7 +83,7 @@ Dependencies:
 - `@ticketproject/core` — shared types/schemas
 
 Dev dependencies:
-- `@ticketproject/api` as a dev dep — only for importing the `AppRouter` type, nothing runtime
+- `@ticketproject/server` as a dev dep — only for importing the `AppRouter` type, nothing runtime
 
 The tRPC client is in `src/lib/trpc.ts`:
 ```ts
@@ -96,4 +96,4 @@ Wrap your app root with `<Providers>` from `src/providers/index.tsx` to get Cler
 
 ---
 
-**Key rule across the whole monorepo:** `packages/core` and `packages/db` are the shared foundation. `nodejsdummy` is the only thing that should touch Fastify/server concerns. `ticket-client` is the only thing that should touch Expo/React Native concerns. Cross-package imports go through the `@ticketproject/*` package names, never via relative paths across package boundaries.
+**Key rule across the whole monorepo:** `packages/core` and `packages/db` are the shared foundation. `server` is the only thing that should touch Fastify/server concerns. `ticket-client` is the only thing that should touch Expo/React Native concerns. Cross-package imports go through the `@ticketproject/*` package names, never via relative paths across package boundaries.

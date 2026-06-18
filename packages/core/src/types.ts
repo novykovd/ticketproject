@@ -32,3 +32,15 @@ export type MatchResult = {
   segment: Segment
   score: number
 }
+
+export const GpsPointSchema = z.object({
+  lat: z.number(),
+  lon: z.number(),
+})
+export type GpsPoint = z.infer<typeof GpsPointSchema>
+
+export const MatchRequestSchema = z.object({
+  from: GpsPointSchema,
+  to: GpsPointSchema,
+})
+export type MatchRequest = z.infer<typeof MatchRequestSchema>

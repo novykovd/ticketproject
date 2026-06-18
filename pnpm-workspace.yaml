@@ -1,4 +1,4 @@
 packages:
-  - "nodejsdummy"
+  - "server"
   - "ticket-client"
   - "packages/*"

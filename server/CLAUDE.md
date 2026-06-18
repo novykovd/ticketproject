@@ -8,7 +8,7 @@ This is a pnpm workspace managed by Turborepo, rooted at `ticketproject/`.
 
 ```
 ticketproject/
-├── nodejsdummy/     (@ticketproject/api)    — Fastify API server
+├── server/     (@ticketproject/server)    — Fastify API server
 ├── ticket-client/   (@ticketproject/mobile) — Expo mobile app
 └── packages/
     ├── core/        (@ticketproject/core)   — shared Zod schemas and TS types
@@ -29,7 +29,7 @@ pnpm db:studio        # open Drizzle Studio
 
 Run within a specific package:
 ```bash
-# from nodejsdummy/
+# from server/
 npx tsx --watch server.js   # dev server with hot reload
 npm test                     # Jest tests
 npx jest tests/matching.test.ts  # single test file
@@ -41,18 +41,18 @@ pnpm db:generate    # generate migration files
 ## Environment variables
 
 Copy `.env.example` to `.env` in each app:
-- `nodejsdummy/.env` — `DATABASE_URL`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`
+- `server/.env` — `DATABASE_URL`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`
 - `ticket-client/.env` — `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`
 
 ## Architecture
 
-### Data & matching pipeline (`nodejsdummy/src/`)
+### Data & matching pipeline (`server/src/`)
 - `rtree.js` — custom R-Tree with insert, split, and KNN search (no external spatial lib)
 - `gtfsUpdater.js` — loads GTFS CSV → `Segment[]`, skips pairs that cross a `shape_id` boundary
 - `matcher.ts` — two-stage match: KNN spatial lookup → dot-product scoring
 - `util.js` / `viewport.js` / `renderer.js` / `runDemo.js` — headless PNG visualization
 
-### API (`nodejsdummy/`)
+### API (`server/`)
 - `server.js` — Fastify entry point; registers CORS, Clerk, and tRPC at `/trpc`
 - `src/trpc.ts` — tRPC init with Clerk-aware context (`createContext`, `protectedProcedure`)
 - `src/router.ts` — `appRouter` (exports `AppRouter` type consumed by mobile)
@@ -74,4 +74,4 @@ Copy `.env.example` to `.env` in each app:
 
 ## Tests
 
-Jest tests live in `nodejsdummy/tests/`. The matching test runs Monte Carlo trials with ≥85% accuracy at 15° GPS noise. There is no separate build step — ts-jest handles TypeScript at test time.
+Jest tests live in `server/tests/`. The matching test runs Monte Carlo trials with ≥85% accuracy at 15° GPS noise. There is no separate build step — ts-jest handles TypeScript at test time.
