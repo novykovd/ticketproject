@@ -10,7 +10,9 @@ const app = Fastify({
 });
 
 await app.register(cors, { origin: true });
-await app.register(clerkPlugin);
+if (process.env.CLERK_PUBLISHABLE_KEY) {
+  await app.register(clerkPlugin);
+}
 await app.register(fastifyTRPCPlugin, {
   prefix: '/trpc',
   trpcOptions: { router: appRouter, createContext },

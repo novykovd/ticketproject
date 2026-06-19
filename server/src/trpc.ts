@@ -3,7 +3,8 @@ import { getAuth } from '@clerk/fastify'
 import type { FastifyRequest } from 'fastify'
 
 export async function createContext({ req }: { req: FastifyRequest }) {
-  return { auth: getAuth(req) }
+  const auth = process.env['CLERK_PUBLISHABLE_KEY'] ? getAuth(req) : { userId: null }
+  return { auth }
 }
 export type Context = Awaited<ReturnType<typeof createContext>>
 

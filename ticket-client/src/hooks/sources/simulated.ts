@@ -1,9 +1,9 @@
 import type { GpsObservation, GpsSourceFactory } from '../useGpsSource'
 
-// Simulates movement through the Toronto GTFS service area.
+// Simulates movement through the Bratislava GTFS service area.
 // Starts at a random point near the city centre, picks a random heading,
 // and walks in a gently curving path — realistic enough to exercise the matcher.
-const CENTRE = { lat: 43.6532, lon: -79.3832 }
+const CENTRE = { lat: 48.1486, lon: 17.1077 }
 const SPREAD = 0.04        // ~4 km spread around centre
 const STEP   = 0.0008      // ~90 m per step (matches typical GTFS segment length)
 
@@ -20,8 +20,8 @@ export const simulatedSource: GpsSourceFactory = (onObservation, intervalMs) => 
 
         const next = {
             lat: pos.lat + Math.cos(headingRad) * STEP,
-            // Longitude degrees are shorter at this latitude (~0.72× latitude degrees)
-            lon: pos.lon + Math.sin(headingRad) * STEP * 0.72,
+            // Longitude degrees are shorter at this latitude (~0.665× at 48°N)
+            lon: pos.lon + Math.sin(headingRad) * STEP * 0.665,
         }
 
         onObservation({ from: pos, to: next })
