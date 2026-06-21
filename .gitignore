@@ -135,6 +135,7 @@ dist
 .yarn/install-state.gz
 .pnp.*
 *.png
+debug-output/
 
 # Turborepo
 .turbo

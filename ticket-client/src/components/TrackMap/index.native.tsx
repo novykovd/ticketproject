@@ -15,13 +15,14 @@ export function TrackMap({ history }: TrackMapProps) {
 
     useEffect(() => {
         if (history.length === 0 || !mapRef.current) return
-        const latest = history[history.length - 1]!
-        mapRef.current.animateToRegion({
-            latitude: latest.query.to.lat,
-            longitude: latest.query.to.lon,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-        }, 500)
+        const coordinates = history.flatMap(e => [
+            { latitude: e.query.from.lat, longitude: e.query.from.lon },
+            { latitude: e.query.to.lat,   longitude: e.query.to.lon   },
+        ])
+        mapRef.current.fitToCoordinates(coordinates, {
+            edgePadding: { top: 60, right: 60, bottom: 60, left: 60 },
+            animated: true,
+        })
     }, [history])
 
     return (
@@ -43,8 +44,8 @@ export function TrackMap({ history }: TrackMapProps) {
                         { latitude: entry.query.from.lat, longitude: entry.query.from.lon },
                         { latitude: entry.query.to.lat, longitude: entry.query.to.lon },
                     ]}
-                    strokeColor={i === history.length - 1 ? '#3b82f6' : '#3b82f640'}
-                    strokeWidth={i === history.length - 1 ? 5 : 2}
+                    strokeColor={i === history.length - 1 ? '#3b82f6' : '#3b82f680'}
+                    strokeWidth={i === history.length - 1 ? 8 : 4}
                 />
             ))}
             {history.filter(e => e.match).map((entry, i, arr) => (
@@ -54,8 +55,8 @@ export function TrackMap({ history }: TrackMapProps) {
                         { latitude: entry.match!.from.lat, longitude: entry.match!.from.lon },
                         { latitude: entry.match!.to.lat, longitude: entry.match!.to.lon },
                     ]}
-                    strokeColor={i === arr.length - 1 ? '#f97316' : '#f9731640'}
-                    strokeWidth={i === arr.length - 1 ? 5 : 2}
+                    strokeColor={i === arr.length - 1 ? '#f97316' : '#f9731680'}
+                    strokeWidth={i === arr.length - 1 ? 8 : 4}
                 />
             ))}
         </MapView>

@@ -10,11 +10,12 @@ import { findBestSegment } from './matcher.js'
 const SHAPES_PATH = process.env['GTFS_SHAPES_PATH'] ?? 'C:/Users/david/Documents/GTFS_latest/shapes.txt'
 
 let tree: RTree | null = null
+let allSegments: ReturnType<typeof loadGTFSSegments> = []
 
 try {
     const limit = process.env['DEV_SEGMENT_LIMIT'] ? parseInt(process.env['DEV_SEGMENT_LIMIT']) : undefined
     console.log('Loading GTFS...')
-    const allSegments = loadGTFSSegments(SHAPES_PATH)
+    allSegments = loadGTFSSegments(SHAPES_PATH)
     const segments = limit !== undefined ? allSegments.slice(0, limit) : allSegments
     if (limit !== undefined) console.log(`DEV mode: capping at ${limit} segments`)
     tree = new RTree()
@@ -22,6 +23,15 @@ try {
     console.log(`R-Tree ready — ${segments.length} segments`)
 } catch (e) {
     console.warn('GTFS load failed, match endpoint will return null:', e)
+}
+
+export function sampleSegments(n: number) {
+    if (!allSegments.length) return []
+    const indices = new Set<number>()
+    while (indices.size < Math.min(n, allSegments.length)) {
+        indices.add(Math.floor(Math.random() * allSegments.length))
+    }
+    return [...indices].map(i => allSegments[i])
 }
 
 export const appRouter = router({

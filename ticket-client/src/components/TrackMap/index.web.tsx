@@ -102,7 +102,17 @@ export function TrackMap({ history }: TrackMapProps) {
                 toLineFeature(e.match!.from, e.match!.to, i === arr.length - 1)
             )
         ))
-        map.panTo([latest.query.to.lon, latest.query.to.lat], { duration: 500 })
+
+        const ml = (window as any).maplibregl
+        const allCoords: [number, number][] = history.flatMap(e => [
+            [e.query.from.lon, e.query.from.lat],
+            [e.query.to.lon,   e.query.to.lat],
+        ])
+        const bounds = allCoords.reduce(
+            (b, c) => b.extend(c),
+            new ml.LngLatBounds(allCoords[0]!, allCoords[0]!)
+        )
+        map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 500 })
     }, [history])
 
     return <div ref={mapContainer} style={{ position: 'absolute', inset: 0 }} />

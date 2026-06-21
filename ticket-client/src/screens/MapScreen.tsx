@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native'
 import { trpc } from '../lib/trpc'
-import { useGpsSource } from '../hooks/useGpsSource'
+import { useGpsSource, type GpsMode } from '../hooks/useGpsSource'
 import { TrackMap } from '../components/TrackMap'
 import type { Entry } from '../components/TrackMap/types'
 
 const MAX_HISTORY = 40
-const BAR_HEIGHT = 56
+const BAR_HEIGHT = 64
 
 function bearing(from: { lat: number; lon: number }, to: { lat: number; lon: number }) {
     const deg = Math.atan2(to.lon - from.lon, to.lat - from.lat) * (180 / Math.PI)
@@ -15,8 +15,17 @@ function bearing(from: { lat: number; lon: number }, to: { lat: number; lon: num
 
 function fmt(n: number) { return n.toFixed(5) }
 
+const MODES: { key: GpsMode; label: string }[] = [
+    { key: 'stops',     label: 'Stops'  },
+    { key: 'simulated', label: 'Walk'   },
+    { key: 'device',    label: 'Record' },
+]
+
+const IOS_TOP = Platform.OS === 'ios' ? 60 : 12
+
 export function MapScreen() {
     const [history, setHistory] = useState<Entry[]>([])
+    const [activeMode, setActiveMode] = useState<GpsMode | null>(null)
 
     const mutation = trpc.location.match.useMutation({
         onSuccess(data, variables) {
@@ -30,10 +39,14 @@ export function MapScreen() {
         },
     })
 
-    const { start, stop, isActive } = useGpsSource(
+    useGpsSource(
         obs => mutation.mutate({ from: obs.from, to: obs.to }),
-        { mode: 'simulated', intervalMs: 1500 },
+        { mode: activeMode, intervalMs: 1500 },
     )
+
+    function handleMode(mode: GpsMode) {
+        setActiveMode(prev => prev === mode ? null : mode)
+    }
 
     const latest = history[history.length - 1] ?? null
 
@@ -42,7 +55,7 @@ export function MapScreen() {
             <View style={s.mapArea}>
                 <TrackMap history={history} />
 
-                <View style={s.hudContainer} pointerEvents="none">
+                <View style={[s.hudContainer, { top: IOS_TOP }]} pointerEvents="none">
                     <View style={s.hud}>
                         <Text style={s.hudLabel}>QUERY</Text>
                         {latest ? <>
@@ -62,40 +75,44 @@ export function MapScreen() {
             </View>
 
             <View style={s.bar}>
-                <View style={s.legend}>
-                    <View style={[s.swatch, { backgroundColor: '#3b82f6' }]} />
-                    <Text style={s.legendText}>query vector</Text>
-                    <View style={[s.swatch, { backgroundColor: '#f97316', marginLeft: 16 }]} />
-                    <Text style={s.legendText}>matched segment</Text>
-                </View>
-                <TouchableOpacity style={[s.btn, isActive && s.btnStop]} onPress={isActive ? stop : start} activeOpacity={0.8}>
-                    <Text style={s.btnText}>{isActive ? 'Stop' : 'Start'}</Text>
-                </TouchableOpacity>
+                {MODES.map(({ key, label }) => {
+                    const active = activeMode === key
+                    return (
+                        <TouchableOpacity
+                            key={key}
+                            style={[s.modeBtn, active && s.modeBtnActive]}
+                            onPress={() => handleMode(key)}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={[s.modeBtnText, active && s.modeBtnTextActive]}>
+                                {active ? `■ ${label}` : label}
+                            </Text>
+                        </TouchableOpacity>
+                    )
+                })}
             </View>
         </View>
     )
 }
 
 const s = StyleSheet.create({
-    root:        { flex: 1, backgroundColor: '#0f0f0f', flexDirection: 'column' },
-    mapArea:     { flex: 1, position: 'relative' },
-    hudContainer:{ position: 'absolute', top: 12, right: 12, zIndex: 1 },
+    root:              { flex: 1, backgroundColor: '#0f0f0f', flexDirection: 'column' },
+    mapArea:           { flex: 1, position: 'relative' },
+    hudContainer:      { position: 'absolute', right: 12, zIndex: 1 },
     hud: {
         backgroundColor: 'rgba(10,10,10,0.85)',
         borderRadius: 8, padding: 12, minWidth: 240,
         borderWidth: 1, borderColor: '#2a2a2a',
     },
-    hudDivider:  { height: 1, backgroundColor: '#2a2a2a', marginVertical: 8 },
-    hudLabel:    { color: '#3b82f6', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, marginBottom: 4 },
-    hudRow:      { fontSize: 11, fontFamily: 'monospace' },
-    hudKey:      { color: '#555' },
-    hudVal:      { color: '#ccc' },
-    hudDim:      { color: '#444', fontSize: 12 },
-    bar:         { height: BAR_HEIGHT, backgroundColor: '#111', paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#222' },
-    legend:      { flexDirection: 'row', alignItems: 'center' },
-    swatch:      { width: 14, height: 4, borderRadius: 2, marginRight: 6 },
-    legendText:  { color: '#555', fontSize: 12 },
-    btn:         { backgroundColor: '#22c55e', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 28 },
-    btnStop:     { backgroundColor: '#ef4444' },
-    btnText:     { color: '#fff', fontSize: 14, fontWeight: '700' },
+    hudDivider:        { height: 1, backgroundColor: '#2a2a2a', marginVertical: 8 },
+    hudLabel:          { color: '#3b82f6', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, marginBottom: 4 },
+    hudRow:            { fontSize: 11, fontFamily: 'monospace' },
+    hudKey:            { color: '#555' },
+    hudVal:            { color: '#ccc' },
+    hudDim:            { color: '#444', fontSize: 12 },
+    bar:               { height: BAR_HEIGHT, backgroundColor: '#111', paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#222', gap: 8 },
+    modeBtn:           { flex: 1, borderRadius: 8, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#2a2a2a', backgroundColor: '#1a1a1a' },
+    modeBtnActive:     { backgroundColor: '#1d3a5e', borderColor: '#3b82f6' },
+    modeBtnText:       { color: '#555', fontSize: 13, fontWeight: '600' },
+    modeBtnTextActive: { color: '#3b82f6' },
 })
