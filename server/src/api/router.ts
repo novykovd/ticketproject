@@ -1,7 +1,7 @@
 import { MatchRequestSchema } from '@ticketproject/core'
 import { router, publicProcedure } from './trpc.js'
 import { findBestSegment } from '../spatial/matcher.js'
-import { resolveTree } from '../cache/resolveTree.js'
+import { resolveTree } from '../persistence/resolveTree.js'
 import type { RTree } from '../spatial/rtree.js'
 
 const SHAPES_PATH = process.env['GTFS_SHAPES_PATH'] ?? 'C:/Users/david/Documents/GTFS_latest/shapes.txt'

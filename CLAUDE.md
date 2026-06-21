@@ -69,7 +69,7 @@ src/
 │   ├── util.js                 — loadGTFSSegments, computeBounds, leafToRect, populateRTree
 │   ├── gtfsUpdater.js
 │   └── index.ts
-├── cache/          Tree persistence + unified resolveTree interface
+├── persistence/    Tree persistence + unified resolveTree interface
 │   ├── resolveTree.ts          — unified loader: reads TREE_CACHED / SEGMENT_CAP env vars
 │   ├── treeCache.ts            — loadTreeCached (serialize/deserialize rtree.json)
 │   ├── segmentCache.ts         — loadSegmentsCached
@@ -92,7 +92,7 @@ src/
 
 ### resolveTree — unified entry point for all consumers
 ```ts
-// src/cache/resolveTree.ts
+// src/persistence/resolveTree.ts
 resolveTree(shapesPath?: string): { tree: RTree; segments: any[] }
 ```
 All consumers (server, tests, debugMatch) go through this. No consumer does its own GTFS loading.

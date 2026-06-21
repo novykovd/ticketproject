@@ -1,7 +1,7 @@
 // Usage: [TREE_CACHED=1] [SEGMENT_CAP=N] npm run debug:match -- minX,minY,maxX,maxY
 import { findBestSegmentDebug } from '../spatial/matcher.js'
 import { renderFailureCase } from '../viz/matchVisualizer.js'
-import { resolveTree } from '../cache/resolveTree.js'
+import { resolveTree } from '../persistence/resolveTree.js'
 
 const SHAPES_PATH = process.env['GTFS_SHAPES_PATH'] ?? 'C:/Users/david/Documents/GTFS_latest/shapes.txt'
 const raw = process.argv.find(a => !a.startsWith('--') && a.includes(','))

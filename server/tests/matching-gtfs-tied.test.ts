@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals'
-import { resolveTree } from '../src/cache/index.js'
+import { resolveTree } from '../src/persistence/index.js'
 import { findBestSegmentDebug, type GpsSegment } from '../src/spatial/index.js'
 import { applyGpsNoise } from '../src/spatial/test-utils.js'
 
