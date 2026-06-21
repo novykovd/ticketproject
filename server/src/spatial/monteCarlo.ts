@@ -14,24 +14,28 @@ export interface MonteCarloOptions {
     noiseAngle?: number   // degrees, default 15
     k?: number            // KNN candidates, default 10
     maxFailures?: number  // how many failures to capture, default 5
+    tiedEpsilon?: number  // max score gap from top to be considered "tied", default 1e-4
 }
 
 export interface MonteCarloResult {
-    accuracy: number
+    accuracy: number      // winner === expected
+    tiedAccuracy: number  // expected is anywhere in the tied top-score cluster
     correct: number
+    tiedCorrect: number
     failures: FailureCase[]
 }
 
 export function runMonteCarlo(tree: RTree, segments: any[], opts: MonteCarloOptions): MonteCarloResult {
-    const { trials, noiseAngle = 15, k = 10, maxFailures = 5 } = opts
+    const { trials, noiseAngle = 15, k = 10, maxFailures = 5, tiedEpsilon = 1e-4 } = opts
 
     let correct = 0
+    let tiedCorrect = 0
     const failures: FailureCase[] = []
     const logEvery = Math.max(1, Math.floor(trials / 10))
 
     for (let i = 0; i < trials; i++) {
         if (i > 0 && i % logEvery === 0) {
-            console.log(`  trial ${i}/${trials} — running accuracy ${((correct / i) * 100).toFixed(1)}%`)
+            console.log(`  trial ${i}/${trials} — accuracy ${((correct / i) * 100).toFixed(1)}%  tied ${((tiedCorrect / i) * 100).toFixed(1)}%`)
         }
 
         const trueSeg = segments[Math.floor(Math.random() * segments.length)]!
@@ -45,14 +49,20 @@ export function runMonteCarlo(tree: RTree, segments: any[], opts: MonteCarloOpti
             maxY: trueSeg.minY + noisyVec.y,
         }
 
-        const predicted = findBestSegment(noisyObs, tree, k)
-        if (predicted === trueSeg) {
-            correct++
-        } else if (failures.length < maxFailures) {
-            const { candidates } = findBestSegmentDebug(noisyObs, tree, k)
+        const { winner, candidates } = findBestSegmentDebug(noisyObs, tree, k)
+
+        const isCorrect = winner === trueSeg
+        if (isCorrect) correct++
+
+        const topScore = candidates[0]?.score ?? 0
+        const tiedSet  = candidates.filter(c => topScore - c.score <= tiedEpsilon)
+        const inTied   = tiedSet.some(c => c.segment === trueSeg)
+        if (inTied) tiedCorrect++
+
+        if (!isCorrect && failures.length < maxFailures) {
             failures.push({ query: noisyObs, expected: trueSeg, candidates })
         }
     }
 
-    return { accuracy: correct / trials, correct, failures }
+    return { accuracy: correct / trials, tiedAccuracy: tiedCorrect / trials, correct, tiedCorrect, failures }
 }

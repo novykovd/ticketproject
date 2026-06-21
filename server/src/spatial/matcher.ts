@@ -14,12 +14,22 @@ export interface ScoredCandidate {
     score: number
 }
 
+function normalize(v: Vector): Vector {
+    const mag = Math.sqrt(v.x * v.x + v.y * v.y)
+    if (mag === 0) return { x: 0, y: 0 }
+    return { x: v.x / mag, y: v.y / mag }
+}
+
 function scoreAndSort(queryVector: Vector, candidates: any[]): ScoredCandidate[] {
+    const qNorm = normalize(queryVector)
     return candidates
-        .map((entry: any) => ({
-            segment: entry.obj.segment,
-            score: queryVector.x * entry.obj.vector.x + queryVector.y * entry.obj.vector.y,
-        }))
+        .map((entry: any) => {
+            const sNorm = normalize(entry.obj.vector)
+            return {
+                segment: entry.obj.segment,
+                score: qNorm.x * sNorm.x + qNorm.y * sNorm.y,
+            }
+        })
         .sort((a, b) => b.score - a.score)
 }
 

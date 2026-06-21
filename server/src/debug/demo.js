@@ -57,6 +57,7 @@ populateRTree(tree, data);
 
 runRTreeVisualization(canvas, tree);
 
+fs.mkdirSync('debug-output', { recursive: true })
 const buffer = canvas.toBuffer('image/png');
-fs.writeFileSync('./rtree.png', buffer);
-console.log('Saved rtree.png');
+fs.writeFileSync('debug-output/rtree.png', buffer);
+console.log('Saved debug-output/rtree.png');

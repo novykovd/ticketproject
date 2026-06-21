@@ -8,13 +8,12 @@ export function loadGTFSSegments(filePath) {
     const rows = lines.slice(1);
     const segments = [];
 
-    // We use a simple loop so we can track the "Previous" point
+    const seen = new Set()
+
     for (let i = 1; i < rows.length; i++) {
         const prevParts = rows[i - 1].split(',');
         const currParts = rows[i].split(',');
 
-        // Check if they belong to the same route (shape_id)
-        // If the shape_id changes, we don't want to draw a line across the city!
         if (prevParts[0] !== currParts[0]) continue;
 
         const p1 = { x: parseFloat(prevParts[1]), y: parseFloat(prevParts[2]) };
@@ -22,11 +21,13 @@ export function loadGTFSSegments(filePath) {
 
         if (isNaN(p1.x) || isNaN(p2.x)) continue;
 
+        const key = `${p1.x.toFixed(6)},${p1.y.toFixed(6)},${p2.x.toFixed(6)},${p2.y.toFixed(6)}`
+        if (seen.has(key)) continue
+        seen.add(key)
+
         segments.push({
-            // Vector A (Start)
             minX: p1.x,
             minY: p1.y,
-            // Vector B (End)
             maxX: p2.x,
             maxY: p2.y,
             shapeId: prevParts[0]
