@@ -8,9 +8,13 @@
     ".": "./src/router.ts"
   },
   "scripts": {
-    "dev": "cross-env DEV_SEGMENT_LIMIT=3000 tsx --watch src/server.js",
+    "dev": "cross-env SEGMENT_CAP=3000 tsx --watch src/server.js",
     "start": "node src/server.js",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test:full": "cross-env TREE_CACHED=1 node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/matching-gtfs-full.test.ts",
+    "cache:tree": "tsx src/cache/buildTree.ts",
+    "cache:tree:rebuild": "tsx src/cache/buildTree.ts --force",
+    "debug:match": "tsx src/debug/debugMatch.ts"
   },
   "dependencies": {
     "@clerk/fastify": "^2.2.0",

@@ -1,26 +1,17 @@
 import { MatchRequestSchema } from '@ticketproject/core'
 import { router, publicProcedure } from './trpc.js'
-import { loadGTFSSegments } from '../gtfs/gtfsUpdater.js'
-import { populateRTree } from '../gtfs/util.js'
-import { RTree } from '../spatial/rtree.js'
 import { findBestSegment } from '../spatial/matcher.js'
+import { resolveTree } from '../cache/resolveTree.js'
+import type { RTree } from '../spatial/rtree.js'
 
-// Load GTFS and build R-Tree once at startup.
-// Set GTFS_SHAPES_PATH to override the default location.
 const SHAPES_PATH = process.env['GTFS_SHAPES_PATH'] ?? 'C:/Users/david/Documents/GTFS_latest/shapes.txt'
 
 let tree: RTree | null = null
-let allSegments: ReturnType<typeof loadGTFSSegments> = []
+let allSegments: any[] = []
 
 try {
-    const limit = process.env['DEV_SEGMENT_LIMIT'] ? parseInt(process.env['DEV_SEGMENT_LIMIT']) : undefined
-    console.log('Loading GTFS...')
-    allSegments = loadGTFSSegments(SHAPES_PATH)
-    const segments = limit !== undefined ? allSegments.slice(0, limit) : allSegments
-    if (limit !== undefined) console.log(`DEV mode: capping at ${limit} segments`)
-    tree = new RTree()
-    populateRTree(tree, segments)
-    console.log(`R-Tree ready — ${segments.length} segments`)
+    ;({ tree, segments: allSegments } = resolveTree(SHAPES_PATH))
+    console.log(`R-Tree ready — ${allSegments.length} segments`)
 } catch (e) {
     console.warn('GTFS load failed, match endpoint will return null:', e)
 }
