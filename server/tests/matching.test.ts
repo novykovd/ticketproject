@@ -1,45 +1,23 @@
-import { RTree } from '../src/rtree.js'
-import { findBestSegment } from '../src/matcher'
-import { applyGpsNoise } from '../src/test-utils'
+import { RTree } from '../src/spatial/index.js'
+import { populateRTree } from '../src/gtfs/index.js'
+import { runMonteCarlo } from '../src/spatial/index.js'
 
-describe('Vector Matching Monte Carlo', () => {
-    let testTree: RTree
-    const dummySegments = [
-        { id: "North", minX: 0, minY: 0, maxX: 0, maxY: 10 },
-        { id: "East",  minX: 0, minY: 0, maxX: 10, maxY: 0 }
-    ]
+const dummySegments = [
+    { id: 'North', minX: 0, minY: 0, maxX: 0,  maxY: 10 },
+    { id: 'East',  minX: 0, minY: 0, maxX: 10, maxY: 0  },
+]
+
+describe('Vector Matching Monte Carlo (synthetic)', () => {
+    let tree: RTree
 
     beforeAll(() => {
-        testTree = new RTree()
-        dummySegments.forEach(seg => {
-            const vector = { x: seg.maxX - seg.minX, y: seg.maxY - seg.minY }
-            testTree.insert({ minX: 0, minY: 0, maxX: 10, maxY: 10 }, { segment: seg, vector })
-        })
+        tree = new RTree()
+        populateRTree(tree, dummySegments)
     })
 
-    test('should match at least 85% with 15 degree noise', () => {
-        const TRIALS = 1000
-        let correct = 0
-
-        for (let i = 0; i < TRIALS; i++) {
-            const trueSeg = dummySegments[Math.floor(Math.random() * dummySegments.length)]!
-            const baseVec = { x: trueSeg.maxX - trueSeg.minX, y: trueSeg.maxY - trueSeg.minY }
-            const noisyVec = applyGpsNoise(baseVec, 15)
-
-            // Build a GPS segment: same start point, noisy endpoint
-            const noisyObs = {
-                minX: trueSeg.minX,
-                minY: trueSeg.minY,
-                maxX: trueSeg.minX + noisyVec.x,
-                maxY: trueSeg.minY + noisyVec.y,
-            }
-
-            const predicted = findBestSegment(noisyObs, testTree)
-            if (predicted && (predicted as any).id === trueSeg.id) correct++
-        }
-
-        const accuracy = correct / TRIALS
-        console.log(`Final Accuracy: ${(accuracy * 100).toFixed(2)}%`)
+    test('should match ≥85% with 15° noise (1000 trials)', () => {
+        const { accuracy } = runMonteCarlo(tree, dummySegments, { trials: 1000 })
+        console.log(`Accuracy: ${(accuracy * 100).toFixed(2)}%`)
         expect(accuracy).toBeGreaterThan(0.85)
     })
 })

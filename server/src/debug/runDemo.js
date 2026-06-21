@@ -1,7 +1,7 @@
-import {computeBounds} from "./util.js"
-import { RTree } from './rtree.js';
-import { Viewport } from './viewport.js';
-import { createRenderer } from './renderer.js';
+import { computeBounds } from '../gtfs/util.js'
+import { RTree } from '../spatial/rtree.js'
+import { Viewport } from '../viz/viewport.js'
+import { createRenderer } from '../viz/renderer.js'
 
 /**
  * Puns visuals over passed rtree

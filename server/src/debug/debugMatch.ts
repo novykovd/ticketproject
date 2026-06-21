@@ -1,9 +1,9 @@
 // Usage: GTFS_SEGMENT_CAP=N tsx src/debugMatch.ts minX,minY,maxX,maxY
-import { loadGTFSSegments } from './gtfsUpdater.js'
-import { populateRTree } from './util.js'
-import { RTree } from './rtree.js'
-import { findBestSegmentDebug } from './matcher.js'
-import { renderFailureCase } from './matchVisualizer.js'
+import { loadGTFSSegments } from '../gtfs/gtfsUpdater.js'
+import { populateRTree } from '../gtfs/util.js'
+import { RTree } from '../spatial/rtree.js'
+import { findBestSegmentDebug } from '../spatial/matcher.js'
+import { renderFailureCase } from '../viz/matchVisualizer.js'
 
 const SHAPES_PATH = process.env['GTFS_SHAPES_PATH'] ?? 'C:/Users/david/Documents/GTFS_latest/shapes.txt'
 const SEGMENT_CAP = parseInt(process.env['GTFS_SEGMENT_CAP'] ?? '0', 10)

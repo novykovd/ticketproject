@@ -199,6 +199,34 @@ export class RTree {
         return leafEntries;
     }
 
+    serialize() {
+        function serializeNode(node) {
+            return {
+                leaf: node.leaf,
+                entries: node.entries.map(e => ({
+                    mbr: e.mbr,
+                    child: node.leaf ? e.child : serializeNode(e.child)
+                }))
+            }
+        }
+        return { maxEntries: this.maxEntries, root: serializeNode(this.root) }
+    }
+
+    static deserialize(data) {
+        const tree = new RTree(data.maxEntries)
+        function deserializeNode(nodeData, parent) {
+            const node = new Node(nodeData.leaf)
+            node.parent = parent
+            node.entries = nodeData.entries.map(e => ({
+                mbr: e.mbr,
+                child: nodeData.leaf ? e.child : deserializeNode(e.child, node)
+            }))
+            return node
+        }
+        tree.root = deserializeNode(data.root, null)
+        return tree
+    }
+
     knn(q, k) {
         const best = []
 

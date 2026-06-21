@@ -2,8 +2,8 @@ import Fastify from "fastify";
 import cors from '@fastify/cors';
 import { clerkPlugin } from '@clerk/fastify';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
-import { appRouter, sampleSegments } from './router.ts';
-import { createContext } from './trpc.js';
+import { appRouter, sampleSegments } from './api/router.ts'
+import { createContext } from './api/trpc.js'
 
 const app = Fastify({
   logger: true

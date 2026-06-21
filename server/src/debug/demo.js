@@ -1,8 +1,8 @@
-import { runRTreeVisualization } from "./runDemo.js";
-import { loadGTFSSegments } from "./gtfsUpdater.js";
-import { createCanvas } from 'canvas';
-import { RTree } from "./rtree.js";
-import { populateRTree } from "./util.js";
+import { runRTreeVisualization } from './runDemo.js'
+import { loadGTFSSegments } from '../gtfs/gtfsUpdater.js'
+import { createCanvas } from 'canvas'
+import { RTree } from '../spatial/rtree.js'
+import { populateRTree } from '../gtfs/util.js'
 import fs from 'fs';
 
 const leaves = [

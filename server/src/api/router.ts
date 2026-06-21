@@ -1,9 +1,9 @@
 import { MatchRequestSchema } from '@ticketproject/core'
-import { router, publicProcedure } from './trpc'
-import { loadGTFSSegments } from './gtfsUpdater.js'
-import { populateRTree } from './util.js'
-import { RTree } from './rtree.js'
-import { findBestSegment } from './matcher.js'
+import { router, publicProcedure } from './trpc.js'
+import { loadGTFSSegments } from '../gtfs/gtfsUpdater.js'
+import { populateRTree } from '../gtfs/util.js'
+import { RTree } from '../spatial/rtree.js'
+import { findBestSegment } from '../spatial/matcher.js'
 
 // Load GTFS and build R-Tree once at startup.
 // Set GTFS_SHAPES_PATH to override the default location.
