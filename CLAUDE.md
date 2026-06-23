@@ -34,6 +34,7 @@ npm run cache:tree           # build R-Tree from full GTFS → server/cache/rtre
 npm run cache:tree:rebuild   # force rebuild even if cache exists
 npm run test:full            # Monte Carlo accuracy test, full cached tree
 npm run test:tied            # tied-set diagnostic: measures redundancy gap
+npm run test:interpolation   # majority-vote accuracy at N=1,3,5,10 (needs TREE_CACHED=1)
 npm run debug:match          # visualize a single failure case → debug-output/debug.png
 ```
 
@@ -63,7 +64,7 @@ src/
 │   ├── rtree.js / rtree.d.ts   — custom R-Tree (insert, KNN, serialize/deserialize)
 │   ├── matcher.ts              — findBestSegment, findBestSegmentDebug, cosine scoring
 │   ├── monteCarlo.ts           — runMonteCarlo (accuracy + tiedAccuracy metrics)
-│   ├── test-utils.ts           — applyGpsNoise
+│   ├── test-utils.ts           — applyGpsNoise (angle noise), interpolateWithNoise (position noise)
 │   └── index.ts
 ├── gtfs/           GTFS CSV loading and R-Tree population
 │   ├── util.js                 — loadGTFSSegments, computeBounds, leafToRect, populateRTree
@@ -131,17 +132,53 @@ Always `import { jest } from '@jest/globals'` — jest is not a global in ESM.
 
 ## R-Tree cache
 
-Full 5988-segment tree at `server/cache/rtree.json` (gitignored via `/server/cache/` in root .gitignore).
+Full deduplicated tree (1739 segments after removing coordinate-identical duplicates) at `server/cache/rtree.json` (gitignored via `/server/cache/` in root .gitignore).
 Rebuild: `npm run cache:tree:rebuild`. Takes ~2-3s. Deserialization is near-instant.
 R-Tree has circular `parent` refs — serialization strips them, deserialization reconstructs them.
+Deduplication is in `gtfsUpdater.js` via a coordinate hashmap keyed on `p1.x,p1.y,p2.x,p2.y` (6dp). Direction-preserving — opposite-direction segments on the same street are kept as distinct entries.
 
-## Matching accuracy (last measured, 50 trials)
+## Matching accuracy (last measured)
 
-- **Winner accuracy ~22%** — top-ranked segment is correct
-- **Tied-set accuracy ~82%** — correct segment is in the top-score cluster
-- **Redundancy gap ~60%** — root cause: same physical street has many `shape_id`s in GTFS, they score identically
+- **Single-vector, deduplicated tree, 200 trials:** winner 60.5%, tied-set 60.5%, redundancy gap 0%
+- **Single-vector, duplicate tree, 50 trials:** winner 22%, tied-set 82%, redundancy gap 60%
 
-The algorithm is working. The gap is a data model issue: the right key is `route_id + stop_id`, not raw `shape_id`.
+The jump from 22% → 60.5% came entirely from deduplication. The tied-set drop from 82% → 60.5% is not regression — with duplicates the correct street appeared multiple times so tied-set was inflated. Now each physical location exists once; winner == tied-set is correct.
+Remaining ~39.5% failures are genuine direction mismatch from GPS noise.
+
+## Interpolation tests (branch: feature/interpolation-tests)
+
+### What's already built
+
+`interpolateWithNoise(seg, steps, sigmaDeg)` in `src/spatial/test-utils.ts`:
+- Interpolates `steps+1` evenly-spaced points along segment A→B
+- Adds independent Gaussian position noise (Box-Muller) to each point, default sigma=0.0001° (~10m)
+- Returns `steps` consecutive direction vectors (as `GpsSegment[]`) — the simulated GPS readings
+
+This is more realistic than the existing `applyGpsNoise` (which adds angle noise to a single vector). Real GPS error is positional, so direction noise is derived from two noisy positions, not applied directly to the angle.
+
+### Majority-vote matcher — `src/spatial/majorityMatcher.ts`
+
+`majorityVote(seg, tree, steps, sigmaDeg?, k?)`:
+- Calls `interpolateWithNoise` to produce `steps` direction vectors
+- Runs each through `findBestSegmentDebug` (to get scores for tiebreaking)
+- Tallies votes per matched segment; tiebreak by cumulative cosine score
+- Returns `{ winner, votes, vectorResults }` — `vectorResults` carries per-vector `matched` + `score` for viz
+
+### Majority-vote test — `tests/matching-gtfs-interpolation.test.ts`
+
+Runs N=1,3,5,10 as separate Jest tests in one describe block.
+`npm run test:interpolation` (needs `TREE_CACHED=1`).
+Expected convergence: N=1→~60.5% (baseline), N=5→~83%, N=10→~93%.
+
+### Interpolation visualizer — `renderInterpolationCase` in `matchVisualizer.js`
+
+Parallel to `renderFailureCase` (don't modify existing).
+Takes `{ trueSeg, vectorResults, majorityWinner }`:
+- Faint white line = ideal segment
+- Yellow dots = N+1 noisy GPS position samples (reconstructed from vector minX/minY + final maxX/maxY)
+- Green/orange arrows = per-vector direction vectors (green=matched expected, orange=wrong)
+- Faint orange = segments the matcher wrongly picked
+- Sidebar: legend, ideal segment coords, majority winner (correct/wrong), per-vector vote list
 
 ## Database design (planned, not yet implemented)
 

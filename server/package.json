@@ -13,8 +13,10 @@
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
     "test:full": "cross-env TREE_CACHED=1 node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/matching-gtfs-full.test.ts",
     "test:tied": "cross-env TREE_CACHED=1 node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/matching-gtfs-tied.test.ts",
-    "cache:tree": "tsx src/cache/buildTree.ts",
-    "cache:tree:rebuild": "tsx src/cache/buildTree.ts --force",
+    "test:interpolation": "cross-env TREE_CACHED=1 node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/matching-gtfs-interpolation.test.ts",
+    "test:interpolation:viz": "cross-env TREE_CACHED=1 node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/matching-gtfs-interpolation-viz.test.ts",
+    "cache:tree": "tsx src/persistence/buildTree.ts",
+    "cache:tree:rebuild": "tsx src/persistence/buildTree.ts --force",
     "debug:match": "tsx src/debug/debugMatch.ts"
   },
   "dependencies": {
