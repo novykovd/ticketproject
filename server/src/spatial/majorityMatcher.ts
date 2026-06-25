@@ -21,8 +21,22 @@ export interface WeightedVoteResult {
     vectorResults: VectorResult[]
 }
 
-function runVectors(seg: GpsSegment, tree: RTree, steps: number, sigmaDeg: number, k: number): VectorResult[] {
-    return interpolateWithNoise(seg, steps, sigmaDeg).map(v => {
+function resolveSteps(seg: GpsSegment, steps: number, stepSizeDeg?: number): number {
+    if (!stepSizeDeg) return steps
+    const len = Math.hypot(seg.maxX - seg.minX, seg.maxY - seg.minY)
+    return Math.max(1, Math.round(len / stepSizeDeg))
+}
+
+function runVectors(
+    seg: GpsSegment,
+    tree: RTree,
+    steps: number,
+    sigmaDeg: number,
+    k: number,
+    stepSizeDeg?: number,
+): VectorResult[] {
+    const actualSteps = resolveSteps(seg, steps, stepSizeDeg)
+    return interpolateWithNoise(seg, actualSteps, sigmaDeg).map(v => {
         const { winner, candidates } = findBestSegmentDebug(v, tree, k)
         return { vector: v, matched: winner, score: candidates[0]?.score ?? 0, candidates }
     })
@@ -35,8 +49,9 @@ export function majorityVote(
     steps: number,
     sigmaDeg = 0.0001,
     k = 10,
+    stepSizeDeg?: number,
 ): MajorityVoteResult {
-    const vectorResults = runVectors(seg, tree, steps, sigmaDeg, k)
+    const vectorResults = runVectors(seg, tree, steps, sigmaDeg, k, stepSizeDeg)
 
     const tally = new Map<any, { count: number; totalScore: number }>()
     for (const { matched, score } of vectorResults) {
@@ -61,8 +76,9 @@ export function weightedVote(
     steps: number,
     sigmaDeg = 0.0001,
     k = 10,
+    stepSizeDeg?: number,
 ): WeightedVoteResult {
-    const vectorResults = runVectors(seg, tree, steps, sigmaDeg, k)
+    const vectorResults = runVectors(seg, tree, steps, sigmaDeg, k, stepSizeDeg)
 
     const tally = new Map<any, number>()
     for (const { candidates } of vectorResults) {
