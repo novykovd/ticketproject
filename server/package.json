@@ -17,7 +17,8 @@
     "test:interpolation:viz": "cross-env TREE_CACHED=1 node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/matching-gtfs-interpolation-viz.test.ts",
     "cache:tree": "tsx src/persistence/buildTree.ts",
     "cache:tree:rebuild": "tsx src/persistence/buildTree.ts --force",
-    "debug:match": "tsx src/debug/debugMatch.ts"
+    "debug:match": "tsx src/debug/debugMatch.ts",
+    "seed": "tsx --env-file=../.env src/debug/seed.ts"
   },
   "dependencies": {
     "@clerk/fastify": "^2.2.0",
