@@ -1,4 +1,4 @@
-import { pgTable, serial, text, real, timestamp, integer, index } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, real, timestamp, integer, index, jsonb } from 'drizzle-orm/pg-core'
 
 // Pre-computed directional segments derived from GTFS shape points.
 // The in-memory R-Tree is built from these at startup.
@@ -26,6 +26,22 @@ export const trips = pgTable('trips', {
   matchedRouteId: text('matched_route_id'),
 }, (t) => [
   index('trips_user_idx').on(t.clerkUserId),
+])
+
+export const observations = pgTable('observations', {
+  id: serial('id').primaryKey(),
+  clerkUserId: text('clerk_user_id').notNull(),
+  routeId: text('route_id'),
+  lat: real('lat').notNull(),
+  lon: real('lon').notNull(),
+  headingDeg: real('heading_deg'),
+  type: text('type').notNull(),
+  data: jsonb('data'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [
+  index('observations_lat_lon_idx').on(t.lat, t.lon),
+  index('observations_route_idx').on(t.routeId),
+  index('observations_created_at_idx').on(t.createdAt),
 ])
 
 export const gpsReports = pgTable('gps_reports', {
