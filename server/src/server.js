@@ -18,8 +18,6 @@ await app.register(fastifyTRPCPlugin, {
   trpcOptions: { router: appRouter, createContext },
 });
 
-const reports = [];
-
 app.get("/", async () => {
   return { status: "ok" };
 });
@@ -27,27 +25,6 @@ app.get("/", async () => {
 app.get("/gtfs/sample", async (req) => {
   const n = Math.min(parseInt(req.query.n ?? '20'), 100)
   return { segments: sampleSegments(n) }
-});
-
-app.post("/report", async (req, reply) => {
-  reports.push({
-    ...req.body,
-    receivedAt: Date.now()
-  });
-
-  reply.send({ ok: true });
-});
-
-app.get("/reports", async () => {
-  return reports.slice(-100);
-});
-
-app.post('/location', async (request, reply) => {
-  const location = request.body;
-
-  console.log('Received location:', location);
-
-  return { status: 'ok' };
 });
 
 app.listen({ port: 3000, host: '0.0.0.0' }, (err, address) => {

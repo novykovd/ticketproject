@@ -28,6 +28,15 @@ export const trips = pgTable('trips', {
   index('trips_user_idx').on(t.clerkUserId),
 ])
 
+export const stops = pgTable('stops', {
+  stopId: text('stop_id').primaryKey(),
+  name: text('name').notNull(),
+  lat: real('lat').notNull(),
+  lon: real('lon').notNull(),
+}, (t) => [
+  index('stops_lat_lon_idx').on(t.lat, t.lon),
+])
+
 export const observations = pgTable('observations', {
   id: serial('id').primaryKey(),
   clerkUserId: text('clerk_user_id').notNull(),
@@ -35,6 +44,7 @@ export const observations = pgTable('observations', {
   lat: real('lat').notNull(),
   lon: real('lon').notNull(),
   headingDeg: real('heading_deg'),
+  stopId: text('stop_id').references(() => stops.stopId),
   type: text('type').notNull(),
   data: jsonb('data'),
   createdAt: timestamp('created_at').notNull().defaultNow(),

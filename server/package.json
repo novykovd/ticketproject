@@ -18,7 +18,11 @@
     "cache:tree": "tsx src/persistence/buildTree.ts",
     "cache:tree:rebuild": "tsx src/persistence/buildTree.ts --force",
     "debug:match": "tsx src/debug/debugMatch.ts",
-    "seed": "tsx --env-file=../.env src/debug/seed.ts"
+    "seed": "tsx --env-file=../.env src/debug/seed.ts",
+    "seed:stops": "tsx --env-file=../.env src/debug/seed-stops.ts",
+    "check:stops": "tsx src/debug/check-stop-distances.ts",
+    "test:queries": "tsx --env-file=../.env src/debug/test-queries.ts",
+    "test:trpc": "tsx --env-file=../.env src/debug/test-trpc.ts"
   },
   "dependencies": {
     "@clerk/fastify": "^2.2.0",

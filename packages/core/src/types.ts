@@ -44,3 +44,17 @@ export const MatchRequestSchema = z.object({
   to: GpsPointSchema,
 })
 export type MatchRequest = z.infer<typeof MatchRequestSchema>
+
+export const ViewportSchema = z.object({
+  minLat: z.number(),
+  maxLat: z.number(),
+  minLon: z.number(),
+  maxLon: z.number(),
+})
+
+export const ReportSubmitSchema = z.object({
+  from: GpsPointSchema,
+  to: GpsPointSchema,
+  type: z.enum(['ticket_inspector', 'crowding']),
+  data: z.record(z.unknown()).optional(),
+})

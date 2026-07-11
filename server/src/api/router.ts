@@ -1,7 +1,9 @@
-import { MatchRequestSchema } from '@ticketproject/core'
+import { z } from 'zod'
+import { MatchRequestSchema, ViewportSchema, ReportSubmitSchema } from '@ticketproject/core'
 import { router, publicProcedure } from './trpc.js'
 import { findBestSegment } from '../spatial/matcher.js'
 import { resolveTree } from '../persistence/resolveTree.js'
+import { getReportsByViewport, getReportsByRoute, addObservation } from '@ticketproject/db'
 import type { RTree } from '../spatial/rtree.js'
 
 const SHAPES_PATH = process.env['GTFS_SHAPES_PATH'] ?? 'C:/Users/david/Documents/GTFS_latest/shapes.txt'
@@ -31,20 +33,55 @@ export const appRouter = router({
         gtfsLoaded: tree !== null,
     })),
 
+    reports: router({
+        byViewport: publicProcedure
+            .input(ViewportSchema)
+            .query(({ input }) =>
+                getReportsByViewport(input.minLat, input.maxLat, input.minLon, input.maxLon)
+            ),
+
+        byRoute: publicProcedure
+            .input(z.object({ routeId: z.string() }))
+            .query(({ input }) =>
+                getReportsByRoute(input.routeId)
+            ),
+
+        add: publicProcedure
+            .input(ReportSubmitSchema)
+            .mutation(({ input }) => {
+                if (!tree) throw new Error('GTFS tree not loaded')
+
+                const matched = findBestSegment({
+                    minX: input.from.lat,
+                    minY: input.from.lon,
+                    maxX: input.to.lat,
+                    maxY: input.to.lon,
+                }, tree) as any
+
+                return addObservation({
+                    clerkUserId: 'anonymous',
+                    routeId: matched?.routeId ?? null,
+                    lat: (input.from.lat + input.to.lat) / 2,
+                    lon: (input.from.lon + input.to.lon) / 2,
+                    type: input.type,
+                    data: input.data,
+                })
+            }),
+    }),
+
     location: router({
         match: publicProcedure
             .input(MatchRequestSchema)
             .mutation(({ input }) => {
                 if (!tree) return { matched: false as const }
 
-                const query = {
+                const segment = findBestSegment({
                     minX: input.from.lat,
                     minY: input.from.lon,
                     maxX: input.to.lat,
                     maxY: input.to.lon,
-                }
+                }, tree) as any
 
-                const segment = findBestSegment(query, tree) as any
                 if (!segment) return { matched: false as const }
 
                 return {
