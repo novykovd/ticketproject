@@ -18,6 +18,7 @@
     "cache:tree": "tsx src/persistence/buildTree.ts",
     "cache:tree:rebuild": "tsx src/persistence/buildTree.ts --force",
     "debug:match": "tsx src/debug/debugMatch.ts",
+    "wipe": "tsx --env-file=../.env src/debug/wipe.ts",
     "seed": "tsx --env-file=../.env src/debug/seed.ts",
     "seed:stops": "tsx --env-file=../.env src/debug/seed-stops.ts",
     "check:stops": "tsx src/debug/check-stop-distances.ts",

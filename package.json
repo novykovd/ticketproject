@@ -7,6 +7,7 @@
     "test": "turbo test",
     "lint": "turbo lint",
     "db:push": "turbo db:push --filter=@ticketproject/db",
+    "reset": "pnpm --filter @ticketproject/server run wipe && pnpm --filter @ticketproject/db run db:push && pnpm --filter @ticketproject/server run seed:stops && pnpm --filter @ticketproject/server run seed && pnpm --filter @ticketproject/server run test:queries && pnpm --filter @ticketproject/server run test:trpc",
     "db:migrate": "turbo db:migrate --filter=@ticketproject/db",
     "db:studio": "turbo db:studio --filter=@ticketproject/db"
   },
