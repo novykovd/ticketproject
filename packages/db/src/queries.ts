@@ -2,7 +2,16 @@ import { and, gte, lte, eq, sql } from 'drizzle-orm'
 import { db } from './client'
 import { observations, stops } from './schema'
 
-const NEAREST_STOP_RADIUS_M = 100
+// Empirically, 1318/1319 GTFS stops sit within 5m of a shape point
+// (see server check:stops). Observations land on the matched segment, so 20m
+// gives slack for the midpoint offset while still rejecting between-stop points.
+const NEAREST_STOP_RADIUS_M = 20
+
+// Degree → meter conversion (equirectangular approximation, good over a few km).
+// Latitude is uniform worldwide; longitude shrinks toward the poles, so we scale
+// it by cos(latitude) at Bratislava (~48°N).
+const METERS_PER_DEG_LAT = 111320
+const METERS_PER_DEG_LON = 74500 // 111320 * cos(48°)
 
 function twoHoursAgo() {
     return new Date(Date.now() - 2 * 60 * 60 * 1000)
@@ -12,7 +21,7 @@ async function resolveStopId(lat: number, lon: number): Promise<string | null> {
     const [row] = await db
         .select({
             stopId: stops.stopId,
-            distM: sql<number>`sqrt(((${stops.lat} - ${lat}) * 111320)^2 + ((${stops.lon} - ${lon}) * 74500)^2)`,
+            distM: sql<number>`sqrt(((${stops.lat} - ${lat}) * ${METERS_PER_DEG_LAT})^2 + ((${stops.lon} - ${lon}) * ${METERS_PER_DEG_LON})^2)`,
         })
         .from(stops)
         .orderBy(sql`2`)
@@ -80,6 +89,7 @@ export async function addObservation(input: {
     headingDeg?: number | null
     type: string
     data?: unknown
+    createdAt?: Date   // omit for real reports (DB stamps now); seed backdates
 }) {
     const stopId = await resolveStopId(input.lat, input.lon)
     const [row] = await db.insert(observations).values({ ...input, stopId }).returning()

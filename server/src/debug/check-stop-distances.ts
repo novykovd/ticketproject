@@ -1,19 +1,16 @@
-import fs from 'fs'
+import { parseCSV } from '../gtfs/index.js'
 
 const GTFS = 'C:/Users/david/Documents/GTFS_latest'
 
-function parseCSV(path: string) {
-    const lines = fs.readFileSync(path, 'utf8').trim().split('\n')
-    const headers = lines[0]!.split(',')
-    return lines.slice(1).map(line => {
-        const vals = line.split(',')
-        return Object.fromEntries(headers.map((h, i) => [h.trim(), vals[i]?.trim() ?? '']))
-    })
-}
+// Degree → meter conversion (equirectangular approximation, good over a few km).
+// Latitude is uniform worldwide; longitude shrinks toward the poles, so we scale
+// it by cos(latitude) at Bratislava (~48°N).
+const METERS_PER_DEG_LAT = 111320
+const METERS_PER_DEG_LON = 74500 // 111320 * cos(48°)
 
 function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
-    const dLat = (lat2 - lat1) * 111320
-    const dLon = (lon2 - lon1) * 74500  // cos(48°) * 111320
+    const dLat = (lat2 - lat1) * METERS_PER_DEG_LAT
+    const dLon = (lon2 - lon1) * METERS_PER_DEG_LON
     return Math.sqrt(dLat * dLat + dLon * dLon)
 }
 

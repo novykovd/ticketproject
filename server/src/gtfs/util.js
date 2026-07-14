@@ -1,3 +1,24 @@
+import fs from 'fs';
+
+/**
+ * Generic GTFS/CSV parser. Reads a comma-separated file and returns one plain
+ * object per data row, keyed by the (trimmed) column names in the header line.
+ * Header-indexed, so it survives column reordering — unlike loadGTFSSegments,
+ * which reads shapes.txt by fixed column position for speed.
+ * @param {string} filePath
+ * @returns {Array<Record<string, string>>}
+ */
+export function parseCSV(filePath) {
+  const lines = fs.readFileSync(filePath, 'utf8').trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const row = {};
+    headers.forEach((h, i) => { row[h] = (vals[i] ?? '').trim(); });
+    return row;
+  });
+}
+
 export function computeBounds(rects) {
   let minX = Infinity;
   let minY = Infinity;

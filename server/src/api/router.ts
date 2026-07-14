@@ -3,7 +3,8 @@ import { MatchRequestSchema, ViewportSchema, ReportSubmitSchema } from '@ticketp
 import { router, publicProcedure } from './trpc.js'
 import { findBestSegment } from '../spatial/matcher.js'
 import { resolveTree } from '../persistence/resolveTree.js'
-import { getReportsByViewport, getReportsByRoute, addObservation } from '@ticketproject/db'
+import { getReportsByViewport, getReportsByRoute } from '@ticketproject/db'
+import { addReport } from '../reports/addReport.js'
 import type { RTree } from '../spatial/rtree.js'
 
 const SHAPES_PATH = process.env['GTFS_SHAPES_PATH'] ?? 'C:/Users/david/Documents/GTFS_latest/shapes.txt'
@@ -50,22 +51,7 @@ export const appRouter = router({
             .input(ReportSubmitSchema)
             .mutation(({ input }) => {
                 if (!tree) throw new Error('GTFS tree not loaded')
-
-                const matched = findBestSegment({
-                    minX: input.from.lat,
-                    minY: input.from.lon,
-                    maxX: input.to.lat,
-                    maxY: input.to.lon,
-                }, tree) as any
-
-                return addObservation({
-                    clerkUserId: 'anonymous',
-                    routeId: matched?.routeId ?? null,
-                    lat: (input.from.lat + input.to.lat) / 2,
-                    lon: (input.from.lon + input.to.lon) / 2,
-                    type: input.type,
-                    data: input.data,
-                })
+                return addReport(input, tree)
             }),
     }),
 
