@@ -1,7 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { StyleSheet } from 'react-native'
-import MapView, { Polyline, UrlTile } from 'react-native-maps'
+import MapView, { Polyline, Marker, UrlTile } from 'react-native-maps'
 import type { TrackMapProps } from './types'
+
+const PIN_COLOR: Record<string, string> = {
+    ticket_inspector: 'red',
+    crowding: 'gold',
+}
 
 const BRATISLAVA = {
     latitude: 48.1486,
@@ -10,7 +15,7 @@ const BRATISLAVA = {
     longitudeDelta: 0.05,
 }
 
-export function TrackMap({ history }: TrackMapProps) {
+export function TrackMap({ history, reports = [] }: TrackMapProps) {
     const mapRef = useRef<MapView>(null)
 
     useEffect(() => {
@@ -57,6 +62,15 @@ export function TrackMap({ history }: TrackMapProps) {
                     ]}
                     strokeColor={i === arr.length - 1 ? '#f97316' : '#f9731680'}
                     strokeWidth={i === arr.length - 1 ? 8 : 4}
+                />
+            ))}
+            {reports.map(r => (
+                <Marker
+                    key={`report-${r.id}`}
+                    coordinate={{ latitude: r.lat, longitude: r.lon }}
+                    pinColor={PIN_COLOR[r.type] ?? 'gray'}
+                    title={r.stopName ?? r.type}
+                    description={r.type}
                 />
             ))}
         </MapView>

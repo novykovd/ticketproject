@@ -76,7 +76,7 @@ export function MapScreen() {
     return (
         <View style={s.root}>
             <View style={s.mapArea}>
-                <TrackMap history={history} />
+                <TrackMap history={history} reports={showReports ? reports : []} />
 
                 {showReports && (
                     <View style={[s.reportsContainer, { top: IOS_TOP }]}>

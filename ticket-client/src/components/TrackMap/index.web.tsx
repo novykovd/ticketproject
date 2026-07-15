@@ -25,11 +25,19 @@ function toLineFeature(from: { lat: number; lon: number }, to: { lat: number; lo
     }
 }
 
-function featureCollection(features: ReturnType<typeof toLineFeature>[]) {
+function toPointFeature(report: { id: number; type: string; lat: number; lon: number }) {
+    return {
+        type: 'Feature' as const,
+        properties: { type: report.type },
+        geometry: { type: 'Point' as const, coordinates: [report.lon, report.lat] },
+    }
+}
+
+function featureCollection(features: any[]) {
     return { type: 'FeatureCollection' as const, features }
 }
 
-export function TrackMap({ history }: TrackMapProps) {
+export function TrackMap({ history, reports = [] }: TrackMapProps) {
     const mapContainer = useRef<HTMLDivElement | null>(null)
     const mapInstance = useRef<any>(null)
     const mapReady = useRef(false)
@@ -64,6 +72,19 @@ export function TrackMap({ history }: TrackMapProps) {
                         'line-color': '#f97316',
                         'line-width': ['case', ['get', 'isLatest'], 5, 2],
                         'line-opacity': ['case', ['get', 'isLatest'], 1, 0.25],
+                    },
+                })
+                map.addSource('reports', { type: 'geojson', data: featureCollection([]) })
+                map.addLayer({
+                    id: 'report-pins', type: 'circle', source: 'reports',
+                    paint: {
+                        'circle-radius': 6,
+                        'circle-color': ['match', ['get', 'type'],
+                            'ticket_inspector', '#ef4444',
+                            'crowding', '#eab308',
+                            '#9ca3af'],
+                        'circle-stroke-width': 2,
+                        'circle-stroke-color': '#0a0a0a',
                     },
                 })
                 mapReady.current = true
@@ -114,6 +135,12 @@ export function TrackMap({ history }: TrackMapProps) {
         )
         map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 500 })
     }, [history])
+
+    useEffect(() => {
+        if (!mapReady.current) return
+        const source = mapInstance.current?.getSource('reports')
+        if (source) source.setData(featureCollection(reports.map(toPointFeature)))
+    }, [reports])
 
     return <div ref={mapContainer} style={{ position: 'absolute', inset: 0 }} />
 }

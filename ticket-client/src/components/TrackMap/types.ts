@@ -9,6 +9,15 @@ export type Entry = {
     match: MatchedSegment | null
 }
 
+export type ReportPin = {
+    id: number
+    type: string
+    lat: number
+    lon: number
+    stopName: string | null
+}
+
 export interface TrackMapProps {
     history: Entry[]
+    reports?: ReportPin[]
 }

@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/server.js",
   "exports": {
-    ".": "./src/router.ts"
+    ".": "./src/api/router.ts"
   },
   "scripts": {
     "dev": "cross-env SEGMENT_CAP=3000 tsx --env-file=../.env --watch src/server.js",
