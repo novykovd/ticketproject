@@ -1,0 +1,43 @@
+{
+  "_comment": "Canned Google Routes API computeRoutes TRANSIT response. Trimmed to the fields we consume (field mask: routes.legs.steps.transitDetails). Real Bratislava coords so it resolves to real GTFS stops. Trip: Hlavná stanica -> (transfer at Americké nám.) -> Trnavské mýto.",
+  "routes": [
+    {
+      "legs": [
+        {
+          "steps": [
+            {
+              "transitDetails": {
+                "stopDetails": {
+                  "departureStop": {
+                    "name": "Hlavná stanica",
+                    "location": { "latLng": { "latitude": 48.157543182373, "longitude": 17.1067714691162 } }
+                  },
+                  "arrivalStop": {
+                    "name": "Americké nám.",
+                    "location": { "latLng": { "latitude": 48.1508674621582, "longitude": 17.1179046630859 } }
+                  }
+                },
+                "transitLine": { "name": "Tram 1", "nameShort": "1", "vehicle": { "type": "TRAM" } }
+              }
+            },
+            {
+              "transitDetails": {
+                "stopDetails": {
+                  "departureStop": {
+                    "name": "Americké nám.",
+                    "location": { "latLng": { "latitude": 48.1508674621582, "longitude": 17.1179046630859 } }
+                  },
+                  "arrivalStop": {
+                    "name": "Trnavské mýto",
+                    "location": { "latLng": { "latitude": 48.1578369140625, "longitude": 17.1275081634521 } }
+                  }
+                },
+                "transitLine": { "name": "Trolleybus 201", "nameShort": "201", "vehicle": { "type": "TROLLEYBUS" } }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { and, gte, lte, eq, sql } from 'drizzle-orm'
+import { and, gte, lte, eq, inArray, sql } from 'drizzle-orm'
 import { db } from './client'
 import { observations, stops } from './schema'
 
@@ -17,7 +17,10 @@ function twoHoursAgo() {
     return new Date(Date.now() - 2 * 60 * 60 * 1000)
 }
 
-async function resolveStopId(lat: number, lon: number): Promise<string | null> {
+// Resolves a raw coordinate to the nearest GTFS stop within NEAREST_STOP_RADIUS_M.
+// Exported because it's the reconciliation tool for mapping externally-sourced
+// coordinates (e.g. Google Routes stops) onto our own GTFS stop_ids.
+export async function resolveStopId(lat: number, lon: number): Promise<string | null> {
     const [row] = await db
         .select({
             stopId: stops.stopId,
@@ -29,6 +32,28 @@ async function resolveStopId(lat: number, lon: number): Promise<string | null> {
 
     if (!row || row.distM > NEAREST_STOP_RADIUS_M) return null
     return row.stopId
+}
+
+// Reports at any of the given stops within the 2h window. The DB half of the
+// route-lookup feature: given a journey's stop_ids, which have recent reports?
+export async function getReportsByStops(stopIds: string[]) {
+    if (stopIds.length === 0) return []
+    return db
+        .select({
+            id: observations.id,
+            type: observations.type,
+            createdAt: observations.createdAt,
+            stopId: observations.stopId,
+            stopName: stops.name,
+        })
+        .from(observations)
+        .innerJoin(stops, eq(observations.stopId, stops.stopId))
+        .where(
+            and(
+                inArray(observations.stopId, stopIds),
+                gte(observations.createdAt, twoHoursAgo()),
+            )
+        )
 }
 
 export async function getReportsByViewport(

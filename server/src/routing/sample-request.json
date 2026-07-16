@@ -1,0 +1,5 @@
+{
+  "origin":      { "location": { "latLng": { "latitude": 48.157543, "longitude": 17.106771 } } },
+  "destination": { "location": { "latLng": { "latitude": 48.157837, "longitude": 17.127508 } } },
+  "travelMode": "TRANSIT"
+}
