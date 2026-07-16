@@ -5,6 +5,7 @@ import { findBestSegment } from '../spatial/matcher.js'
 import { resolveTree } from '../persistence/resolveTree.js'
 import { getReportsByViewport, getReportsByRoute } from '@ticketproject/db'
 import { addReport } from '../reports/addReport.js'
+import { getJourneyReport } from '../routing/journeyReport.js'
 import type { RTree } from '../spatial/rtree.js'
 
 const SHAPES_PATH = process.env['GTFS_SHAPES_PATH'] ?? 'C:/Users/david/Documents/GTFS_latest/shapes.txt'
@@ -53,6 +54,16 @@ export const appRouter = router({
                 if (!tree) throw new Error('GTFS tree not loaded')
                 return addReport(input, tree)
             }),
+
+        // Route lookup: plan A->B via Google (or canned), score each journey
+        // stop's danger. No fixture fallback here — an endpoint must return a
+        // real answer, not a stand-in itinerary.
+        journey: publicProcedure
+            .input(z.object({
+                origin: z.object({ lat: z.number(), lon: z.number() }),
+                destination: z.object({ lat: z.number(), lon: z.number() }),
+            }))
+            .query(({ input }) => getJourneyReport(input.origin, input.destination)),
     }),
 
     location: router({

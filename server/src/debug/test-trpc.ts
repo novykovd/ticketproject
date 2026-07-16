@@ -24,4 +24,17 @@ const added = await caller.reports.add({
 })
 console.log(`\nadd result:`, added)
 
+// query: journey — canned route, danger-scored. Force canned so the test is
+// offline/deterministic even though a key is present in .env.
+process.env['ROUTES_SOURCE'] = 'canned'
+const journey = await caller.reports.journey({
+    origin: { lat: 48.1271705627441, lon: 17.1167469024658 },
+    destination: { lat: 48.2090873718262, lon: 17.2199592590332 },
+})
+console.log(`\njourney: ${journey.legs.length} legs`)
+for (const leg of journey.legs) {
+    const pct = (n: number) => `${Math.round(n * 100)}%`
+    console.log(`  ${leg.vehicle} ${leg.line}: ${leg.board.name} (${pct(leg.board.danger)}) -> ${leg.alight.name} (${pct(leg.alight.danger)})`)
+}
+
 process.exit(0)

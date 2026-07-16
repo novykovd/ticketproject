@@ -41,9 +41,23 @@ export async function fetchTransitRoute(origin: LatLng, destination: LatLng) {
     return res.json()
 }
 
-// Unified entry: live if a key is present, otherwise the canned fixture.
-export async function getTransitRoute(origin: LatLng, destination: LatLng) {
-    return process.env['GOOGLE_MAPS_API_KEY']
+// Which data source to use. 'auto' = live when a key exists, else canned.
+export type RoutesSource = 'canned' | 'live' | 'auto'
+
+// Provider switch: an explicit arg wins, else the ROUTES_SOURCE env var, else
+// 'auto'. This is why the source is a real decision, not a side effect of
+// whether a key happens to be set — so you can force 'canned' at 2am even with
+// a key present, and force 'live' when you actually want to test the API.
+export function resolveSource(explicit?: RoutesSource): 'canned' | 'live' {
+    const mode: RoutesSource = explicit ?? (process.env['ROUTES_SOURCE'] as RoutesSource) ?? 'auto'
+    if (mode === 'live' || mode === 'canned') return mode
+    return process.env['GOOGLE_MAPS_API_KEY'] ? 'live' : 'canned'
+}
+
+// Unified entry: picks the source via resolveSource, both modes return the same
+// JSON shape for parseTransitRoute.
+export async function getTransitRoute(origin: LatLng, destination: LatLng, source?: RoutesSource) {
+    return resolveSource(source) === 'live'
         ? fetchTransitRoute(origin, destination)
         : loadFixture()
 }
