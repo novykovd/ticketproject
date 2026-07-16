@@ -1,5 +1,7 @@
 {
-  "origin":      { "location": { "latLng": { "latitude": 48.157543, "longitude": 17.106771 } } },
-  "destination": { "location": { "latLng": { "latitude": 48.157837, "longitude": 17.127508 } } },
-  "travelMode": "TRANSIT"
+  "origin":      { "location": { "latLng": { "latitude": 48.1271705627441, "longitude": 17.1167469024658 } } },
+  "destination": { "location": { "latLng": { "latitude": 48.2090873718262, "longitude": 17.2199592590332 } } },
+  "travelMode": "TRANSIT",
+  "departureTime": "2026-07-17T07:30:00Z"
 }
+

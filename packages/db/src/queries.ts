@@ -56,6 +56,62 @@ export async function getReportsByStops(stopIds: string[]) {
         )
 }
 
+// Every recent ping within `radiusM` of any of the given journey stops, as flat
+// (journeyStopId, distance, age-source) pairs. ONE join instead of a query per
+// stop: SQL prunes by distance + time (the cheap index-friendly part), and the
+// danger scorer does the Gaussian weighting in JS. The distance is the same
+// equirectangular approximation resolveStopId uses, here between a journey stop
+// and a ping's raw coordinate.
+export async function getPingsNearStops(
+    stopIds: string[],
+    radiusM: number,
+    sinceMinutes: number,
+) {
+    if (stopIds.length === 0) return []
+    const cutoff = new Date(Date.now() - sinceMinutes * 60 * 1000)
+    const distM = sql<number>`sqrt(((${stops.lat} - ${observations.lat}) * ${METERS_PER_DEG_LAT})^2 + ((${stops.lon} - ${observations.lon}) * ${METERS_PER_DEG_LON})^2)`
+    return db
+        .select({
+            stopId: stops.stopId,
+            type: observations.type,
+            distM,
+            createdAt: observations.createdAt,
+        })
+        .from(stops)
+        // ON clause pairs a stop with a ping only if they're within radius —
+        // this is the spatial prune; WHERE then restricts to the journey's
+        // stops and the recency window.
+        .innerJoin(observations, sql`${distM} <= ${radiusM}`)
+        .where(
+            and(
+                inArray(stops.stopId, stopIds),
+                gte(observations.createdAt, cutoff),
+            )
+        )
+}
+
+// Distinct stops that got a report within the window. Debug/demo helper for
+// picking stops that actually have danger to show.
+export async function getRecentlyReportedStopIds(sinceMinutes: number, limit = 8): Promise<string[]> {
+    const cutoff = new Date(Date.now() - sinceMinutes * 60 * 1000)
+    const rows = await db
+        .selectDistinct({ stopId: observations.stopId })
+        .from(observations)
+        .where(and(gte(observations.createdAt, cutoff), sql`${observations.stopId} is not null`))
+        .limit(limit)
+    return rows.map((r) => r.stopId).filter(Boolean) as string[]
+}
+
+// stop_id -> name lookup for the given ids.
+export async function getStopNames(stopIds: string[]): Promise<Record<string, string>> {
+    if (stopIds.length === 0) return {}
+    const rows = await db
+        .select({ stopId: stops.stopId, name: stops.name })
+        .from(stops)
+        .where(inArray(stops.stopId, stopIds))
+    return Object.fromEntries(rows.map((r) => [r.stopId, r.name]))
+}
+
 export async function getReportsByViewport(
     minLat: number,
     maxLat: number,
