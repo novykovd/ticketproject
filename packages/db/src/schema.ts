@@ -37,6 +37,30 @@ export const stops = pgTable('stops', {
   index('stops_lat_lon_idx').on(t.lat, t.lon),
 ])
 
+// GTFS routes (lines). short_name is the human label ("1", "201") Google's
+// transitLine.nameShort matches against.
+export const routes = pgTable('routes', {
+  routeId: text('route_id').primaryKey(),
+  shortName: text('short_name').notNull(),
+  type: integer('type'),   // GTFS route_type (0=tram, 3=bus, 11=trolleybus…)
+}, (t) => [
+  index('routes_short_name_idx').on(t.shortName),
+])
+
+// The ordered stop backbone of each line+direction: one row per position.
+// "Stops between A and B" = the rows whose seq is between A's and B's.
+// seq is renumbered 0..N per (route, direction) at import time.
+export const routeStops = pgTable('route_stops', {
+  id: serial('id').primaryKey(),
+  routeId: text('route_id').notNull().references(() => routes.routeId),
+  directionId: integer('direction_id').notNull(),
+  seq: integer('seq').notNull(),
+  stopId: text('stop_id').notNull().references(() => stops.stopId),
+}, (t) => [
+  index('route_stops_range_idx').on(t.routeId, t.directionId, t.seq),   // enumerate a range
+  index('route_stops_find_idx').on(t.routeId, t.directionId, t.stopId), // find a stop's seq
+])
+
 export const observations = pgTable('observations', {
   id: serial('id').primaryKey(),
   clerkUserId: text('clerk_user_id').notNull(),

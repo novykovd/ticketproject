@@ -1,6 +1,7 @@
-import { and, gte, lte, eq, inArray, sql } from 'drizzle-orm'
+import { and, gte, lte, eq, lt, inArray, sql, asc, desc } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { db } from './client'
-import { observations, stops } from './schema'
+import { observations, stops, routes, routeStops } from './schema'
 
 // Empirically, 1318/1319 GTFS stops sit within 5m of a shape point
 // (see server check:stops). Observations land on the matched segment, so 20m
@@ -112,6 +113,19 @@ export async function getStopNames(stopIds: string[]): Promise<Record<string, st
     return Object.fromEntries(rows.map((r) => [r.stopId, r.name]))
 }
 
+// stop_id -> {name, lat, lon} for the given ids. Used where the consumer needs
+// to place the stop on a map, not just label it (e.g. journey danger pins).
+export async function getStopsInfo(
+    stopIds: string[],
+): Promise<Record<string, { name: string; lat: number; lon: number }>> {
+    if (stopIds.length === 0) return {}
+    const rows = await db
+        .select({ stopId: stops.stopId, name: stops.name, lat: stops.lat, lon: stops.lon })
+        .from(stops)
+        .where(inArray(stops.stopId, stopIds))
+    return Object.fromEntries(rows.map((r) => [r.stopId, { name: r.name, lat: r.lat, lon: r.lon }]))
+}
+
 export async function getReportsByViewport(
     minLat: number,
     maxLat: number,
@@ -160,6 +174,62 @@ export async function getReportsByRoute(routeId: string) {
                 gte(observations.createdAt, twoHoursAgo()),
             )
         )
+}
+
+// Expands a transit leg into its full ordered stop list. Given the line's short
+// name plus the resolved board/alight stop_ids, returns every stop_id from board
+// to alight inclusive. Falls back to [board, alight] if it can't be expanded.
+//
+// Two SQL steps:
+//   1. A SELF-JOIN of route_stops to itself (aliased `b` for board, `a` for
+//      alight). We join the routes table (matching the line's short_name) to a
+//      board-row and an alight-row that share the same route_id AND direction_id.
+//      Requiring b.seq < a.seq picks the travel direction; sharing the route_id
+//      picks the variant that actually contains both stops. -> route + direction
+//      + the two seq numbers.
+//   2. A range scan: every route_stops row for that route+direction whose seq is
+//      between the two, ordered by seq. -> the stop array.
+export async function getRouteStopsBetween(
+    line: string,
+    boardId: string | null,
+    alightId: string | null,
+): Promise<string[]> {
+    const fallback = [boardId, alightId].filter(Boolean) as string[]
+    if (!boardId || !alightId) return fallback
+
+    const b = alias(routeStops, 'b') // the board end of the leg
+    const a = alias(routeStops, 'a') // the alight end
+    const [seg] = await db
+        .select({
+            routeId: b.routeId,
+            directionId: b.directionId,
+            boardSeq: b.seq,
+            alightSeq: a.seq,
+        })
+        .from(routes)
+        .innerJoin(b, and(eq(b.routeId, routes.routeId), eq(b.stopId, boardId)))
+        .innerJoin(a, and(
+            eq(a.routeId, routes.routeId),
+            eq(a.directionId, b.directionId), // same direction as the board row
+            eq(a.stopId, alightId),
+        ))
+        .where(and(eq(routes.shortName, line), lt(b.seq, a.seq)))
+        .orderBy(desc(sql`${a.seq} - ${b.seq}`)) // prefer the longest-serving variant
+        .limit(1)
+
+    if (!seg) return fallback
+
+    const rows = await db
+        .select({ stopId: routeStops.stopId })
+        .from(routeStops)
+        .where(and(
+            eq(routeStops.routeId, seg.routeId),
+            eq(routeStops.directionId, seg.directionId),
+            gte(routeStops.seq, seg.boardSeq),
+            lte(routeStops.seq, seg.alightSeq),
+        ))
+        .orderBy(asc(routeStops.seq))
+    return rows.map((r) => r.stopId)
 }
 
 export async function addObservation(input: {

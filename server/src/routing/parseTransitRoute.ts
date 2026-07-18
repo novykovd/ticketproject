@@ -11,8 +11,12 @@ export interface StopPoint {
 }
 
 export interface TransitLeg {
-    line: string          // human label, e.g. "1" or "Tram 1"
-    vehicle: string       // TRAM | BUS | TROLLEYBUS | SUBWAY ...
+    line: string             // human label, e.g. "1" or "Tram 1"
+    vehicle: string          // TRAM | BUS | TROLLEYBUS | SUBWAY ...
+    headsign?: string        // direction / terminus the vehicle is signed for
+    stopCount?: number       // stops between board and alight (intermediate + 1)
+    departureTime?: string   // RFC-3339, board time
+    arrivalTime?: string     // RFC-3339, alight time
     board: StopPoint
     alight: StopPoint
 }
@@ -37,6 +41,10 @@ export function parseTransitRoute(response: any): TransitLeg[] {
             legs.push({
                 line: td.transitLine?.nameShort ?? td.transitLine?.name ?? '?',
                 vehicle: td.transitLine?.vehicle?.type ?? 'UNKNOWN',
+                headsign: td.headsign,
+                stopCount: td.stopCount,
+                departureTime: td.stopDetails.departureTime,
+                arrivalTime: td.stopDetails.arrivalTime,
                 board: toStopPoint(td.stopDetails.departureStop),
                 alight: toStopPoint(td.stopDetails.arrivalStop),
             })

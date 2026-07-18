@@ -1,5 +1,5 @@
 {
-  "_comment": "Canned Google Routes API computeRoutes TRANSIT response. Trimmed to the fields we consume (field mask: routes.legs.steps.transitDetails). Real Bratislava coords so it resolves to real GTFS stops. Trip: Hlavná stanica -> (transfer at Americké nám.) -> Trnavské mýto.",
+  "_comment": "Canned Google Routes API computeRoutes TRANSIT response. Mirrors the fields the live field mask (routes.legs.steps.transitDetails) returns — including stopCount, headsign and times — so canned and live behave the same. Real Bratislava coords so it resolves to real GTFS stops. Trip: Hlavná stanica -> (transfer at Americké nám.) -> Trnavské mýto.",
   "routes": [
     {
       "legs": [
@@ -15,8 +15,12 @@
                   "arrivalStop": {
                     "name": "Americké nám.",
                     "location": { "latLng": { "latitude": 48.1508674621582, "longitude": 17.1179046630859 } }
-                  }
+                  },
+                  "departureTime": "2026-07-17T09:05:00Z",
+                  "arrivalTime": "2026-07-17T09:11:00Z"
                 },
+                "headsign": "Nový most",
+                "stopCount": 4,
                 "transitLine": { "name": "Tram 1", "nameShort": "1", "vehicle": { "type": "TRAM" } }
               }
             },
@@ -30,8 +34,12 @@
                   "arrivalStop": {
                     "name": "Trnavské mýto",
                     "location": { "latLng": { "latitude": 48.1578369140625, "longitude": 17.1275081634521 } }
-                  }
+                  },
+                  "departureTime": "2026-07-17T09:14:00Z",
+                  "arrivalTime": "2026-07-17T09:19:00Z"
                 },
+                "headsign": "Trnavské mýto",
+                "stopCount": 3,
                 "transitLine": { "name": "Trolleybus 201", "nameShort": "201", "vehicle": { "type": "TROLLEYBUS" } }
               }
             }

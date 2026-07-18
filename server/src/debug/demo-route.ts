@@ -20,7 +20,9 @@ const line = (s: { name: string; stopId: string | null; danger: number; pingCoun
     `${(s.name).padEnd(20)} ${s.stopId ?? 'UNRESOLVED'}  ${String(Math.round(s.danger * 100)).padStart(3)}% danger (${s.pingCount} pings)`
 
 for (const leg of legs) {
-    console.log(`${leg.vehicle} ${leg.line}:`)
+    const toward = leg.headsign ? ` toward ${leg.headsign}` : ''
+    const stops = leg.stopCount != null ? `, ${leg.stopCount} stops` : ''
+    console.log(`${leg.vehicle} ${leg.line}${toward}${stops}:`)
     console.log(`   board  ${line(leg.board)}`)
     console.log(`   alight ${line(leg.alight)}`)
 }

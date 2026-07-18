@@ -23,9 +23,11 @@
     "demo:danger": "tsx --env-file=../.env src/debug/demo-danger.ts",
     "seed": "tsx --env-file=../.env src/debug/seed.ts",
     "seed:stops": "tsx --env-file=../.env src/debug/seed-stops.ts",
+    "seed:routes": "tsx --env-file=../.env src/debug/seed-routes.ts",
+    "demo:legs": "tsx --env-file=../.env src/debug/demo-legs.ts",
     "check:stops": "tsx src/debug/check-stop-distances.ts",
     "test:queries": "tsx --env-file=../.env src/debug/test-queries.ts",
-    "test:trpc": "tsx --env-file=../.env src/debug/test-trpc.ts"
+    "test:trpc": "cross-env ROUTES_SOURCE=canned tsx --env-file=../.env src/debug/test-trpc.ts"
   },
   "dependencies": {
     "@clerk/fastify": "^2.2.0",

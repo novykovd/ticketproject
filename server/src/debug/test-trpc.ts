@@ -24,17 +24,17 @@ const added = await caller.reports.add({
 })
 console.log(`\nadd result:`, added)
 
-// query: journey — canned route, danger-scored. Force canned so the test is
-// offline/deterministic even though a key is present in .env.
-process.env['ROUTES_SOURCE'] = 'canned'
+// query: journey — canned route, danger-scored. The test:trpc script sets
+// ROUTES_SOURCE=canned so this stays offline/deterministic despite the .env key.
 const journey = await caller.reports.journey({
     origin: { lat: 48.1271705627441, lon: 17.1167469024658 },
     destination: { lat: 48.2090873718262, lon: 17.2199592590332 },
 })
 console.log(`\njourney: ${journey.legs.length} legs`)
 for (const leg of journey.legs) {
-    const pct = (n: number) => `${Math.round(n * 100)}%`
-    console.log(`  ${leg.vehicle} ${leg.line}: ${leg.board.name} (${pct(leg.board.danger)}) -> ${leg.alight.name} (${pct(leg.alight.danger)})`)
+    const s = (x: { name: string; lat: number; lon: number; danger: number }) =>
+        `${x.name} [${x.lat.toFixed(4)},${x.lon.toFixed(4)}] ${Math.round(x.danger * 100)}%`
+    console.log(`  ${leg.vehicle} ${leg.line}: ${s(leg.board)} -> ${s(leg.alight)}`)
 }
 
 process.exit(0)
