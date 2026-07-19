@@ -34,7 +34,13 @@ export function TrackMap({ history, reports = [] }: TrackMapProps) {
         <MapView
             ref={mapRef}
             style={StyleSheet.absoluteFillObject}
-            initialRegion={BRATISLAVA}
+            initialCamera={{
+                center: { latitude: BRATISLAVA.latitude, longitude: BRATISLAVA.longitude },
+                pitch: 50,      // angular tilt
+                heading: 0,
+                zoom: 14,       // Android
+                altitude: 3000, // iOS
+            }}
             mapType="none"
         >
             <UrlTile

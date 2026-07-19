@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { httpBatchLink } from '@trpc/client'
 import { trpc } from './src/lib/trpc'
-import { MapScreen } from './src/screens/MapScreen'
+import { RootShell } from './src/screens/RootShell'
 
 const queryClient = new QueryClient()
 const trpcClient  = trpc.createClient({
@@ -19,7 +19,7 @@ export default function App() {
         <trpc.Provider client={trpcClient} queryClient={queryClient}>
             <QueryClientProvider client={queryClient}>
                 <StatusBar style="light" />
-                <MapScreen />
+                <RootShell />
             </QueryClientProvider>
         </trpc.Provider>
     )

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "cross-env SEGMENT_CAP=3000 tsx --env-file=../.env --watch src/server.js",
+    "dev:canned": "cross-env ROUTES_SOURCE=canned SEGMENT_CAP=3000 tsx --env-file=../.env --watch src/server.js",
     "start": "node --env-file=../.env src/server.js",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
     "test:full": "cross-env TREE_CACHED=1 node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/matching-gtfs-full.test.ts",

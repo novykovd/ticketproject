@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { TrackMapProps, Entry } from './types'
 
 const BRATISLAVA_LNG_LAT: [number, number] = [17.1077, 48.1486]
 const ZOOM = 14
+const PITCH = 50   // angular tilt for a 3D-ish look
 
 const OSM_STYLE = {
     version: 8 as const,
@@ -40,7 +41,9 @@ function featureCollection(features: any[]) {
 export function TrackMap({ history, reports = [] }: TrackMapProps) {
     const mapContainer = useRef<HTMLDivElement | null>(null)
     const mapInstance = useRef<any>(null)
-    const mapReady = useRef(false)
+    // State (not a ref) so that becoming ready re-runs the data effects below and
+    // applies any reports that arrived before the map finished loading.
+    const [mapReady, setMapReady] = useState(false)
 
     useEffect(() => {
         if (!mapContainer.current) return
@@ -54,6 +57,7 @@ export function TrackMap({ history, reports = [] }: TrackMapProps) {
                 style: OSM_STYLE,
                 center: BRATISLAVA_LNG_LAT,
                 zoom: ZOOM,
+                pitch: PITCH,
             })
             map.on('load', () => {
                 map.addSource('query', { type: 'geojson', data: featureCollection([]) })
@@ -87,7 +91,7 @@ export function TrackMap({ history, reports = [] }: TrackMapProps) {
                         'circle-stroke-color': '#0a0a0a',
                     },
                 })
-                mapReady.current = true
+                setMapReady(true)
             })
             mapInstance.current = map
         }
@@ -107,11 +111,11 @@ export function TrackMap({ history, reports = [] }: TrackMapProps) {
             document.head.appendChild(script)
         }
 
-        return () => { if (map) { map.remove(); mapReady.current = false } }
+        return () => { if (map) { map.remove(); setMapReady(false) } }
     }, [])
 
     useEffect(() => {
-        if (!mapReady.current || history.length === 0) return
+        if (!mapReady || history.length === 0) return
         const map = mapInstance.current
         const latest = history[history.length - 1]!
 
@@ -133,14 +137,14 @@ export function TrackMap({ history, reports = [] }: TrackMapProps) {
             (b, c) => b.extend(c),
             new ml.LngLatBounds(allCoords[0]!, allCoords[0]!)
         )
-        map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 500 })
-    }, [history])
+        map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 500, pitch: PITCH })
+    }, [history, mapReady])
 
     useEffect(() => {
-        if (!mapReady.current) return
+        if (!mapReady) return
         const source = mapInstance.current?.getSource('reports')
         if (source) source.setData(featureCollection(reports.map(toPointFeature)))
-    }, [reports])
+    }, [reports, mapReady])
 
     return <div ref={mapContainer} style={{ position: 'absolute', inset: 0 }} />
 }
