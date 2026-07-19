@@ -32,9 +32,11 @@ const journey = await caller.reports.journey({
 })
 console.log(`\njourney: ${journey.legs.length} legs`)
 for (const leg of journey.legs) {
-    const s = (x: { name: string; lat: number; lon: number; danger: number }) =>
-        `${x.name} [${x.lat.toFixed(4)},${x.lon.toFixed(4)}] ${Math.round(x.danger * 100)}%`
-    console.log(`  ${leg.vehicle} ${leg.line}: ${s(leg.board)} -> ${s(leg.alight)}`)
+    const hottest = [...leg.stops].sort((a, b) => b.danger - a.danger)[0]
+    const first = leg.stops[0]
+    const last = leg.stops[leg.stops.length - 1]
+    console.log(`  ${leg.vehicle} ${leg.line}: ${first?.name} -> ${last?.name} (${leg.stops.length} stops)`)
+    if (hottest) console.log(`     hottest: ${hottest.name} ${Math.round(hottest.danger * 100)}% [${hottest.lat.toFixed(4)},${hottest.lon.toFixed(4)}]`)
 }
 
 process.exit(0)

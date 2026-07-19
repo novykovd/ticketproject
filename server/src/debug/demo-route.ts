@@ -16,14 +16,13 @@ const { legs, fellBack } = await getJourneyReport(ORIGIN, DESTINATION, { source,
 if (fellBack) console.warn('live returned no transit legs (night / walkable) — fell back to fixture\n')
 
 console.log(`${legs.length} transit leg(s):\n`)
-const line = (s: { name: string; stopId: string | null; danger: number; pingCount: number }) =>
-    `${(s.name).padEnd(20)} ${s.stopId ?? 'UNRESOLVED'}  ${String(Math.round(s.danger * 100)).padStart(3)}% danger (${s.pingCount} pings)`
-
 for (const leg of legs) {
     const toward = leg.headsign ? ` toward ${leg.headsign}` : ''
-    const stops = leg.stopCount != null ? `, ${leg.stopCount} stops` : ''
-    console.log(`${leg.vehicle} ${leg.line}${toward}${stops}:`)
-    console.log(`   board  ${line(leg.board)}`)
-    console.log(`   alight ${line(leg.alight)}`)
+    console.log(`${leg.vehicle} ${leg.line}${toward} — ${leg.stops.length} stops:`)
+    for (const s of leg.stops) {
+        const pct = String(Math.round(s.danger * 100)).padStart(3)
+        console.log(`   ${pct}%  ${s.name.padEnd(22)} (${s.pingCount} pings)`)
+    }
+    console.log()
 }
 process.exit(0)

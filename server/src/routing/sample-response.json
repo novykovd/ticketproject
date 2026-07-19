@@ -1,5 +1,5 @@
 {
-  "_comment": "Canned Google Routes API computeRoutes TRANSIT response. Mirrors the fields the live field mask (routes.legs.steps.transitDetails) returns — including stopCount, headsign and times — so canned and live behave the same. Real Bratislava coords so it resolves to real GTFS stops. Trip: Hlavná stanica -> (transfer at Americké nám.) -> Trnavské mýto.",
+  "_comment": "Canned Google Routes API computeRoutes TRANSIT response. Uses REAL Bratislava lines + stops so it resolves to GTFS route_stops and expands to full legs. Trip: Zlaté piesky --(TRAM 4)--> Centrum --(transfer, TRAM 3)--> Komisárky. Mirrors the live field mask (routes.legs.steps.transitDetails).",
   "routes": [
     {
       "legs": [
@@ -9,38 +9,38 @@
               "transitDetails": {
                 "stopDetails": {
                   "departureStop": {
-                    "name": "Hlavná stanica",
-                    "location": { "latLng": { "latitude": 48.157543182373, "longitude": 17.1067714691162 } }
+                    "name": "Zlaté piesky",
+                    "location": { "latLng": { "latitude": 48.1894912719727, "longitude": 17.1825981140137 } }
                   },
                   "arrivalStop": {
-                    "name": "Americké nám.",
-                    "location": { "latLng": { "latitude": 48.1508674621582, "longitude": 17.1179046630859 } }
+                    "name": "Centrum",
+                    "location": { "latLng": { "latitude": 48.1458778381348, "longitude": 17.1137886047363 } }
                   },
-                  "departureTime": "2026-07-17T09:05:00Z",
-                  "arrivalTime": "2026-07-17T09:11:00Z"
+                  "departureTime": "2026-07-20T09:05:00Z",
+                  "arrivalTime": "2026-07-20T09:24:00Z"
                 },
-                "headsign": "Nový most",
-                "stopCount": 4,
-                "transitLine": { "name": "Tram 1", "nameShort": "1", "vehicle": { "type": "TRAM" } }
+                "headsign": "Pri kríži",
+                "stopCount": 14,
+                "transitLine": { "name": "Tram 4", "nameShort": "4", "vehicle": { "type": "TRAM" } }
               }
             },
             {
               "transitDetails": {
                 "stopDetails": {
                   "departureStop": {
-                    "name": "Americké nám.",
-                    "location": { "latLng": { "latitude": 48.1508674621582, "longitude": 17.1179046630859 } }
+                    "name": "Centrum",
+                    "location": { "latLng": { "latitude": 48.1455535888672, "longitude": 17.1135902404785 } }
                   },
                   "arrivalStop": {
-                    "name": "Trnavské mýto",
-                    "location": { "latLng": { "latitude": 48.1578369140625, "longitude": 17.1275081634521 } }
+                    "name": "Komisárky",
+                    "location": { "latLng": { "latitude": 48.2162742614746, "longitude": 17.1665477752686 } }
                   },
-                  "departureTime": "2026-07-17T09:14:00Z",
-                  "arrivalTime": "2026-07-17T09:19:00Z"
+                  "departureTime": "2026-07-20T09:28:00Z",
+                  "arrivalTime": "2026-07-20T09:47:00Z"
                 },
-                "headsign": "Trnavské mýto",
-                "stopCount": 3,
-                "transitLine": { "name": "Trolleybus 201", "nameShort": "201", "vehicle": { "type": "TROLLEYBUS" } }
+                "headsign": "Komisárky",
+                "stopCount": 12,
+                "transitLine": { "name": "Tram 3", "nameShort": "3", "vehicle": { "type": "TRAM" } }
               }
             }
           ]

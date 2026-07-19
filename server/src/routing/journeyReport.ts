@@ -1,7 +1,7 @@
 // The route-lookup feature as ONE reusable call: outsourced planning (Google
 // Routes) + our danger scoring. Both the CLI demo and the tRPC endpoint call
 // this — the orchestration lives here once, not duplicated in each consumer.
-import { resolveStopId, getStopsInfo } from '@ticketproject/db'
+import { resolveStopId, getStopsInfo, getRouteStopsBetween } from '@ticketproject/db'
 import { parseTransitRoute, type TransitLeg, type StopPoint } from './parseTransitRoute.js'
 import { getTransitRoute, loadFixture, type LatLng, type RoutesSource } from './googleRoutes.js'
 import { journeyDanger } from '../danger/index.js'
@@ -22,8 +22,7 @@ export interface JourneyLeg {
     stopCount?: number
     departureTime?: string
     arrivalTime?: string
-    board: JourneyStop
-    alight: JourneyStop
+    stops: JourneyStop[]   // ordered board -> alight, intermediate stops included
 }
 
 export interface JourneyReport {
@@ -53,48 +52,57 @@ export async function getJourneyReport(
         fellBack = true
     }
 
-    // Resolve every board/alight coordinate to a GTFS stop_id. Promise.all runs
-    // the small lookups concurrently rather than awaiting them one by one.
-    const resolved = await Promise.all(
-        legs.map(async (leg) => ({
-            leg,
-            boardId: await resolveStopId(leg.board.lat, leg.board.lon),
-            alightId: await resolveStopId(leg.alight.lat, leg.alight.lon),
-        })),
+    // For each leg: resolve the endpoints, then expand to the FULL ordered stop
+    // list via route_stops (board -> every intermediate -> alight). Endpoint
+    // resolution runs concurrently.
+    const expanded = await Promise.all(
+        legs.map(async (leg) => {
+            const [boardId, alightId] = await Promise.all([
+                resolveStopId(leg.board.lat, leg.board.lon),
+                resolveStopId(leg.alight.lat, leg.alight.lon),
+            ])
+            const stopIds = await getRouteStopsBetween(leg.line, boardId, alightId)
+            return { leg, stopIds }
+        }),
     )
 
-    // Score every distinct journey stop in one join, then look up coords/names.
-    const stopIds = [...new Set(resolved.flatMap((r) => [r.boardId, r.alightId]).filter(Boolean) as string[])]
-    const dangers = await journeyDanger(stopIds)
-    const info = await getStopsInfo(stopIds)
+    // Score every distinct stop across ALL legs in one join, then look up names.
+    const allStopIds = [...new Set(expanded.flatMap((e) => e.stopIds))]
+    const dangers = await journeyDanger(allStopIds)
+    const info = await getStopsInfo(allStopIds)
     const dByStop = new Map(dangers.map((d) => [d.stopId, d]))
 
-    // Prefer the GTFS stop's data; fall back to Google's coord/name if a stop
-    // didn't resolve, so a pin still shows (just with danger 0).
-    const toStop = (pt: StopPoint, stopId: string | null): JourneyStop => {
-        const s = stopId ? info[stopId] : undefined
-        const d = stopId ? dByStop.get(stopId) : undefined
+    // Every id from route_stops is a real GTFS stop, so info always has it.
+    const fromGtfs = (stopId: string): JourneyStop => {
+        const s = info[stopId]
+        const d = dByStop.get(stopId)
         return {
-            name: s?.name ?? pt.name,
-            stopId: stopId ?? null,
-            lat: s?.lat ?? pt.lat,
-            lon: s?.lon ?? pt.lon,
+            name: s?.name ?? stopId,
+            stopId,
+            lat: s?.lat ?? 0,
+            lon: s?.lon ?? 0,
             danger: d?.danger ?? 0,
             pingCount: d?.pingCount ?? 0,
         }
     }
+    // Fallback when a leg couldn't be expanded (endpoints didn't resolve): show
+    // Google's board/alight so a pin still appears, unscored.
+    const fromPoint = (pt: StopPoint): JourneyStop => ({
+        name: pt.name, stopId: null, lat: pt.lat, lon: pt.lon, danger: 0, pingCount: 0,
+    })
 
     return {
         fellBack,
-        legs: resolved.map(({ leg, boardId, alightId }) => ({
+        legs: expanded.map(({ leg, stopIds }) => ({
             vehicle: leg.vehicle,
             line: leg.line,
             headsign: leg.headsign,
             stopCount: leg.stopCount,
             departureTime: leg.departureTime,
             arrivalTime: leg.arrivalTime,
-            board: toStop(leg.board, boardId),
-            alight: toStop(leg.alight, alightId),
+            stops: stopIds.length > 0
+                ? stopIds.map(fromGtfs)
+                : [fromPoint(leg.board), fromPoint(leg.alight)],
         })),
     }
 }
