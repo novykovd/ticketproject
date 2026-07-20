@@ -2,8 +2,9 @@ import { z } from 'zod'
 import { MatchRequestSchema, ViewportSchema, ReportSubmitSchema } from '@ticketproject/core'
 import { router, publicProcedure } from './trpc.js'
 import { findBestSegment } from '../spatial/matcher.js'
+import { interpolateWithNoise } from '../spatial/index.js'
 import { resolveTree } from '../persistence/resolveTree.js'
-import { getReportsByViewport, getReportsByRoute } from '@ticketproject/db'
+import { getReportsByViewport, getReportsByRoute, searchStops, getNearestStop } from '@ticketproject/db'
 import { addReport } from '../reports/addReport.js'
 import { getJourneyReport } from '../routing/journeyReport.js'
 import type { RTree } from '../spatial/rtree.js'
@@ -64,6 +65,37 @@ export const appRouter = router({
                 destination: z.object({ lat: z.number(), lon: z.number() }),
             }))
             .query(({ input }) => getJourneyReport(input.origin, input.destination)),
+    }),
+
+    stops: router({
+        // Autocomplete for the From/To bars — searches our own stop names.
+        search: publicProcedure
+            .input(z.object({ q: z.string() }))
+            .query(({ input }) => searchStops(input.q)),
+
+        // Nearest stop to a coordinate — powers "use my location".
+        nearest: publicProcedure
+            .input(z.object({ lat: z.number(), lon: z.number() }))
+            .query(({ input }) => getNearestStop(input.lat, input.lon)),
+    }),
+
+    // Dev-only: a canned noisy GPS track along a random real segment, so the
+    // capture -> match path can be exercised from a desk without moving. Returns
+    // the same {lat,lon}[] shape the real capture produces (times don't matter
+    // to the matcher, so there are none here).
+    dev: router({
+        sampleTrack: publicProcedure
+            .input(z.object({ steps: z.number().int().min(2).max(30).optional() }).optional())
+            .query(({ input }) => {
+                const [seg] = sampleSegments(1)
+                if (!seg) return { points: [] as { lat: number; lon: number }[], shapeId: null as string | null }
+                const vectors = interpolateWithNoise(seg, input?.steps ?? 6)
+                const points = [
+                    { lat: vectors[0]!.minX, lon: vectors[0]!.minY },
+                    ...vectors.map(v => ({ lat: v.maxX, lon: v.maxY })),
+                ]
+                return { points, shapeId: seg.shapeId as string }
+            }),
     }),
 
     location: router({

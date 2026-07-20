@@ -39,4 +39,15 @@ for (const leg of journey.legs) {
     if (hottest) console.log(`     hottest: ${hottest.name} ${Math.round(hottest.danger * 100)}% [${hottest.lat.toFixed(4)},${hottest.lon.toFixed(4)}]`)
 }
 
+// stops.search + stops.nearest
+const found = await caller.stops.search({ q: 'zlat' })
+console.log(`\nstops.search 'zlat': ${found.length} hits ->`, found.map(f => f.name).join(', '))
+
+const near = await caller.stops.nearest({ lat: 48.1486, lon: 17.1077 })
+console.log(`stops.nearest (centre): ${near?.name} (${Math.round(near?.distM ?? 0)}m)`)
+
+const track = await caller.dev.sampleTrack({ steps: 6 })
+console.log(`\ndev.sampleTrack: ${track.points.length} points along shape ${track.shapeId}`)
+console.log('  first point:', track.points[0])
+
 process.exit(0)

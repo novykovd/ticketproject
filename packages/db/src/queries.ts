@@ -126,6 +126,34 @@ export async function getStopsInfo(
     return Object.fromEntries(rows.map((r) => [r.stopId, { name: r.name, lat: r.lat, lon: r.lon }]))
 }
 
+// Name search over stops for the From/To autocomplete. Our own data, so no
+// Google Places API needed — and it only ever offers real stops.
+// NOTE: accent-sensitive for now ("zlate" won't match "Zlaté"); enabling the
+// Postgres `unaccent` extension would fix that later.
+export async function searchStops(q: string, limit = 8) {
+    const term = q.trim()
+    if (term.length < 2) return []
+    // DISTINCT ON name -> one row per stop name (platforms collapse to one entry).
+    return db
+        .selectDistinctOn([stops.name], { stopId: stops.stopId, name: stops.name, lat: stops.lat, lon: stops.lon })
+        .from(stops)
+        .where(sql`${stops.name} ILIKE ${'%' + term + '%'}`)
+        .orderBy(stops.name)
+        .limit(limit)
+}
+
+// Nearest stop to a coordinate, for "use my location". Unlike resolveStopId it
+// returns the stop regardless of distance (no snapping threshold).
+export async function getNearestStop(lat: number, lon: number) {
+    const distM = sql<number>`sqrt(((${stops.lat} - ${lat}) * ${METERS_PER_DEG_LAT})^2 + ((${stops.lon} - ${lon}) * ${METERS_PER_DEG_LON})^2)`
+    const [row] = await db
+        .select({ stopId: stops.stopId, name: stops.name, lat: stops.lat, lon: stops.lon, distM })
+        .from(stops)
+        .orderBy(distM)
+        .limit(1)
+    return row ?? null
+}
+
 export async function getReportsByViewport(
     minLat: number,
     maxLat: number,
