@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { StyleSheet } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import MapView, { Polyline, Marker, UrlTile } from 'react-native-maps'
 import type { TrackMapProps } from './types'
 
@@ -15,7 +15,7 @@ const BRATISLAVA = {
     longitudeDelta: 0.05,
 }
 
-export function TrackMap({ history, reports = [] }: TrackMapProps) {
+export function TrackMap({ history, reports = [], journey = [] }: TrackMapProps) {
     const mapRef = useRef<MapView>(null)
 
     useEffect(() => {
@@ -78,6 +78,18 @@ export function TrackMap({ history, reports = [] }: TrackMapProps) {
                     title={r.stopName ?? r.type}
                     description={r.type}
                 />
+            ))}
+            {journey.length > 1 && (
+                <Polyline
+                    coordinates={journey.map(p => ({ latitude: p.lat, longitude: p.lon }))}
+                    strokeColor="#a78bfa"
+                    strokeWidth={4}
+                />
+            )}
+            {journey.map((p, i) => (
+                <Marker key={`journey-${i}`} coordinate={{ latitude: p.lat, longitude: p.lon }} anchor={{ x: 0.5, y: 0.5 }}>
+                    <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: p.color, borderWidth: 1, borderColor: '#0a0a0a' }} />
+                </Marker>
             ))}
         </MapView>
     )

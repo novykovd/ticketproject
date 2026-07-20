@@ -1,13 +1,15 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native'
 import { trpc } from '../lib/trpc'
 import { useGpsSource, type GpsMode } from '../hooks/useGpsSource'
 import { useReportCapture } from '../hooks/useReportCapture'
 import { TrackMap } from '../components/TrackMap'
-import type { Entry } from '../components/TrackMap/types'
+import type { Entry, ReportPin } from '../components/TrackMap/types'
 
-// The match-visualizer: feeds synthetic/real GPS through location.match and
-// shows the query vs matched segment. Lives inside the Dev surface.
+// Dev match-visualizer. Two ways to drive it:
+//  - GPS modes (Stops/Walk/Record) -> single-vector location.match (query/match)
+//  - Report (real GPS) / Sample (canned track) -> multi-sample reports.matchTrack,
+//    drawing the whole track + the majority-voted segment + arrival.
 const MAX_HISTORY = 40
 const BAR_HEIGHT = 64
 const IOS_TOP = Platform.OS === 'ios' ? 16 : 12
@@ -27,53 +29,61 @@ function fmt(n: number) { return n.toFixed(5) }
 export function MatchScreen() {
     const [history, setHistory] = useState<Entry[]>([])
     const [activeMode, setActiveMode] = useState<GpsMode | null>(null)
-    const [lastCapture, setLastCapture] = useState<string | null>(null)
-    // Held in state (not just a ref) so the last track is inspectable on the
-    // component instance via React DevTools, not only in the console.
-    const [lastSamples, setLastSamples] = useState<{ lat: number; lon: number }[] | null>(null)
+    const [trackPoints, setTrackPoints] = useState<{ lat: number; lon: number }[] | null>(null)
     const utils = trpc.useUtils()
 
-    const capture = useReportCapture((samples, arrived) => {
-        console.log('[dev report capture]', { count: samples.length, arrived, samples })
-        setLastSamples(samples.map(p => ({ lat: p.lat, lon: p.lon })))
-        setLastCapture(`${samples.length} samples${arrived ? ' · arrived' : ''}`)
-    })
-
-    // Pull a canned noisy track from the server (develop from a desk, no moving).
-    async function grabSample() {
-        const res = await utils.dev.sampleTrack.fetch({ steps: 6 })
-        console.log('[dev sample track]', res)
-        setLastSamples(res.points)
-        setLastCapture(`${res.points.length} canned · ${res.shapeId ?? '?'}`)
-    }
-
+    // single-vector matcher (GPS mode buttons)
     const mutation = trpc.location.match.useMutation({
         onSuccess(data, variables) {
             const entry: Entry = {
                 query: variables,
-                match: data.matched
-                    ? { shapeId: data.shapeId, from: data.from, to: data.to }
-                    : null,
+                match: data.matched ? { shapeId: data.shapeId, from: data.from, to: data.to } : null,
             }
             setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), entry])
         },
     })
+    useGpsSource(obs => mutation.mutate({ from: obs.from, to: obs.to }), { mode: activeMode, intervalMs: 1500 })
+    function handleMode(mode: GpsMode) { setActiveMode(prev => prev === mode ? null : mode) }
 
-    useGpsSource(
-        obs => mutation.mutate({ from: obs.from, to: obs.to }),
-        { mode: activeMode, intervalMs: 1500 },
-    )
+    // multi-sample matcher (Report / Sample)
+    const matchMut = trpc.reports.matchTrack.useMutation()
+    const match = matchMut.data ?? null
 
-    function handleMode(mode: GpsMode) {
-        setActiveMode(prev => prev === mode ? null : mode)
+    const capture = useReportCapture((samples, arrived) => {
+        console.log('[dev report capture]', { count: samples.length, arrived, samples })
+        const pts = samples.map(p => ({ lat: p.lat, lon: p.lon }))
+        if (pts.length >= 2) { setTrackPoints(pts); matchMut.mutate({ points: pts }) }
+    })
+    async function grabSample() {
+        const res = await utils.dev.sampleTrack.fetch({ steps: 8 })
+        console.log('[dev sample track]', res)
+        if (res.points.length >= 2) { setTrackPoints(res.points); matchMut.mutate({ points: res.points }) }
     }
+    function clearMatch() { setTrackPoints(null); matchMut.reset() }
+
+    // Track as blue path, matched segment as orange on the last leg, arrival as pin.
+    const matchHistory: Entry[] = useMemo(() => {
+        if (!trackPoints || trackPoints.length < 2) return []
+        const es: Entry[] = trackPoints.slice(0, -1).map((p, i) => ({ query: { from: p, to: trackPoints[i + 1]! }, match: null }))
+        if (match?.segment && es.length) {
+            es[es.length - 1]!.match = { shapeId: match.shapeId ?? '?', from: match.segment.from, to: match.segment.to }
+        }
+        return es
+    }, [trackPoints, match])
+    const arrivalPin: ReportPin[] = match ? [{
+        id: -1, type: 'ticket_inspector',
+        lat: match.arrivalStop?.lat ?? match.arrival.lat,
+        lon: match.arrivalStop?.lon ?? match.arrival.lon,
+        stopName: match.arrivalStop?.name ?? null,
+    }] : []
+    const showMatch = matchHistory.length > 0
 
     const latest = history[history.length - 1] ?? null
 
     return (
         <View style={s.root}>
             <View style={s.mapArea}>
-                <TrackMap history={history} reports={[]} />
+                <TrackMap history={showMatch ? matchHistory : history} reports={showMatch ? arrivalPin : []} />
 
                 <View style={[s.reportBox, { top: IOS_TOP }]}>
                     {capture.capturing ? <>
@@ -89,7 +99,13 @@ export function MatchScreen() {
                             <Text style={s.sampleBtnText}>🧪 Sample</Text>
                         </TouchableOpacity>
                     </>}
-                    {lastCapture && <Text style={s.repLast}>last: {lastCapture}</Text>}
+                    {matchMut.isPending && <Text style={s.repLast}>matching…</Text>}
+                    {match && <Text style={s.repLast}>shape {match.shapeId ?? '?'} · {match.votes}/{match.totalVectors}</Text>}
+                    {showMatch && (
+                        <TouchableOpacity onPress={clearMatch} activeOpacity={0.7}>
+                            <Text style={s.repClear}>× clear</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 <View style={[s.hudContainer, { top: IOS_TOP }]} pointerEvents="none">
@@ -115,15 +131,8 @@ export function MatchScreen() {
                 {MODES.map(({ key, label }) => {
                     const active = activeMode === key
                     return (
-                        <TouchableOpacity
-                            key={key}
-                            style={[s.modeBtn, active && s.modeBtnActive]}
-                            onPress={() => handleMode(key)}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={[s.modeBtnText, active && s.modeBtnTextActive]}>
-                                {active ? `■ ${label}` : label}
-                            </Text>
+                        <TouchableOpacity key={key} style={[s.modeBtn, active && s.modeBtnActive]} onPress={() => handleMode(key)} activeOpacity={0.7}>
+                            <Text style={[s.modeBtnText, active && s.modeBtnTextActive]}>{active ? `■ ${label}` : label}</Text>
                         </TouchableOpacity>
                     )
                 })}
@@ -152,7 +161,8 @@ const s = StyleSheet.create({
     repArrivedText:    { color: 'rgba(16,185,129,0.85)', fontSize: 12, fontWeight: '600' },
     sampleBtn:         { backgroundColor: '#1a1a1a', borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1, borderColor: '#2a2a2a' },
     sampleBtnText:     { color: '#a78bfa', fontSize: 13, fontWeight: '700' },
-    repLast:           { color: '#666', fontSize: 11, fontFamily: 'monospace' },
+    repLast:           { color: '#888', fontSize: 11, fontFamily: 'monospace' },
+    repClear:          { color: '#3b82f6', fontSize: 12, fontWeight: '600' },
     bar:               { height: BAR_HEIGHT, backgroundColor: '#111', paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#222', gap: 8 },
     modeBtn:           { flex: 1, borderRadius: 8, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#2a2a2a', backgroundColor: '#1a1a1a' },
     modeBtnActive:     { backgroundColor: '#1d3a5e', borderColor: '#3b82f6' },

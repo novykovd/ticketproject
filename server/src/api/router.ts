@@ -6,6 +6,7 @@ import { interpolateWithNoise } from '../spatial/index.js'
 import { resolveTree } from '../persistence/resolveTree.js'
 import { getReportsByViewport, getReportsByRoute, searchStops, getNearestStop } from '@ticketproject/db'
 import { addReport } from '../reports/addReport.js'
+import { addReportFromTrack } from '../reports/addReportFromTrack.js'
 import { getJourneyReport } from '../routing/journeyReport.js'
 import type { RTree } from '../spatial/rtree.js'
 
@@ -54,6 +55,18 @@ export const appRouter = router({
             .mutation(({ input }) => {
                 if (!tree) throw new Error('GTFS tree not loaded')
                 return addReport(input, tree)
+            }),
+
+        // Multi-sample report: a captured GPS track -> majority-vote match ->
+        // observation. Returns the matched segment + arrival for the UI to draw.
+        matchTrack: publicProcedure
+            .input(z.object({
+                points: z.array(z.object({ lat: z.number(), lon: z.number() })).min(2),
+                type: z.string().optional(),
+            }))
+            .mutation(({ input }) => {
+                if (!tree) throw new Error('GTFS tree not loaded')
+                return addReportFromTrack(input.points, input.type ?? 'ticket_inspector', tree)
             }),
 
         // Route lookup: plan A->B via Google (or canned), score each journey

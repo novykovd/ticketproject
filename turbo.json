@@ -12,6 +12,10 @@
       "cache": false,
       "persistent": true
     },
+    "dev:phone": {
+      "cache": false,
+      "persistent": true
+    },
     "lint": {},
     "db:push": { "cache": false },
     "db:migrate": { "cache": false },

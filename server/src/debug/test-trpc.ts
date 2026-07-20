@@ -50,4 +50,10 @@ const track = await caller.dev.sampleTrack({ steps: 6 })
 console.log(`\ndev.sampleTrack: ${track.points.length} points along shape ${track.shapeId}`)
 console.log('  first point:', track.points[0])
 
+// full pipeline: sample track -> match -> observation
+const matched = await caller.reports.matchTrack({ points: track.points })
+console.log(`\nmatchTrack: shape ${matched.shapeId} (${matched.votes}/${matched.totalVectors} votes)`)
+console.log('  segment:', matched.segment)
+console.log('  arrival:', matched.arrival, '-> stop', matched.stopId)
+
 process.exit(0)

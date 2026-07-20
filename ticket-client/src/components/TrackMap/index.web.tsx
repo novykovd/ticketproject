@@ -38,7 +38,7 @@ function featureCollection(features: any[]) {
     return { type: 'FeatureCollection' as const, features }
 }
 
-export function TrackMap({ history, reports = [] }: TrackMapProps) {
+export function TrackMap({ history, reports = [], journey = [] }: TrackMapProps) {
     const mapContainer = useRef<HTMLDivElement | null>(null)
     const mapInstance = useRef<any>(null)
     // State (not a ref) so that becoming ready re-runs the data effects below and
@@ -90,6 +90,16 @@ export function TrackMap({ history, reports = [] }: TrackMapProps) {
                         'circle-stroke-width': 2,
                         'circle-stroke-color': '#0a0a0a',
                     },
+                })
+                map.addSource('journey-line', { type: 'geojson', data: featureCollection([]) })
+                map.addLayer({
+                    id: 'journey-line', type: 'line', source: 'journey-line',
+                    paint: { 'line-color': '#a78bfa', 'line-width': 4, 'line-opacity': 0.9 },
+                })
+                map.addSource('journey-stops', { type: 'geojson', data: featureCollection([]) })
+                map.addLayer({
+                    id: 'journey-stops', type: 'circle', source: 'journey-stops',
+                    paint: { 'circle-radius': 6, 'circle-color': ['get', 'color'], 'circle-stroke-width': 2, 'circle-stroke-color': '#0a0a0a' },
                 })
                 setMapReady(true)
             })
@@ -145,6 +155,31 @@ export function TrackMap({ history, reports = [] }: TrackMapProps) {
         const source = mapInstance.current?.getSource('reports')
         if (source) source.setData(featureCollection(reports.map(toPointFeature)))
     }, [reports, mapReady])
+
+    useEffect(() => {
+        if (!mapReady) return
+        const map = mapInstance.current
+        const lineSrc = map?.getSource('journey-line')
+        const stopSrc = map?.getSource('journey-stops')
+        if (!lineSrc || !stopSrc) return
+        if (journey.length === 0) {
+            lineSrc.setData(featureCollection([]))
+            stopSrc.setData(featureCollection([]))
+            return
+        }
+        lineSrc.setData(featureCollection([{
+            type: 'Feature', properties: {},
+            geometry: { type: 'LineString', coordinates: journey.map(p => [p.lon, p.lat]) },
+        }]))
+        stopSrc.setData(featureCollection(journey.map(p => ({
+            type: 'Feature', properties: { color: p.color },
+            geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+        }))))
+        const ml = (window as any).maplibregl
+        const coords = journey.map(p => [p.lon, p.lat] as [number, number])
+        const bounds = coords.reduce((b, c) => b.extend(c), new ml.LngLatBounds(coords[0]!, coords[0]!))
+        map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 500, pitch: PITCH })
+    }, [journey, mapReady])
 
     return <div ref={mapContainer} style={{ position: 'absolute', inset: 0 }} />
 }
